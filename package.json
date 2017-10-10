@@ -1,0 +1,8 @@
+{
+  "name": "maillage-api",
+  "version": "1.0.0",
+  "authors": "Sarah Pierson & Guillaume Peres",
+  "dependencies": {
+    "express": "^4.16.1"
+  }
+}

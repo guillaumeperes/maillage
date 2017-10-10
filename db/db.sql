@@ -1,23 +1,3 @@
-ALTER TABLE "users_roles" DROP CONSTRAINT "fk_users_roles_users";
-ALTER TABLE "users_roles" DROP CONSTRAINT "fk_users_roles_roles";
-ALTER TABLE "tags" DROP CONSTRAINT "fk_tags_categories";
-ALTER TABLE "contents" DROP CONSTRAINT "fk_contents_users";
-ALTER TABLE "contents_tags" DROP CONSTRAINT "fk_contents_tags_tags_id";
-ALTER TABLE "contents_tags" DROP CONSTRAINT "fk_contents_tags_contents";
-ALTER TABLE "history" DROP CONSTRAINT "fk_history_contents";
-ALTER TABLE "history" DROP CONSTRAINT "fk_history_users";
-ALTER TABLE "history" DROP CONSTRAINT "fk_history_type";
-
-DROP TABLE "users";
-DROP TABLE "roles";
-DROP TABLE "users_roles";
-DROP TABLE "history";
-DROP TABLE "contents";
-DROP TABLE "tags";
-DROP TABLE "contents_tags";
-DROP TABLE "categories";
-DROP TABLE "action_types";
-
 CREATE TABLE "users" (
 "id" int4 NOT NULL,
 "email" text NOT NULL,

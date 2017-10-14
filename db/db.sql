@@ -1,81 +1,100 @@
+
+------------------------
+-- Création du schéma --
+------------------------
+
 CREATE TABLE "users" (
-"id" int4 NOT NULL,
+"id" serial4 NOT NULL,
 "email" text NOT NULL,
 "password" text NOT NULL,
-"firstname" text,
-"lastname" text,
-"created" timestamp(0) NOT NULL,
-"updated" timestamp(0),
+"firstname" text DEFAULT NULL,
+"lastname" text DEFAULT NULL,
+"created" timestamp(0) NOT NULL DEFAULT now(),
+"updated" timestamp(0) DEFAULT NULL,
+"confirmed" timestamp(0) DEFAULT NULL,
+"deleted" timestamp(0) DEFAULT NULL,
 PRIMARY KEY ("id") 
 )
 WITHOUT OIDS;
 
 CREATE TABLE "roles" (
-"id" int4 NOT NULL,
-"title" text,
+"id" serial4 NOT NULL,
+"name" text NOT NULL,
+"title" text NOT NULL,
+"inherits" jsonb DEFAULT NULL,
 PRIMARY KEY ("id") 
 )
 WITHOUT OIDS;
 
 CREATE TABLE "users_roles" (
-"id" int4 NOT NULL,
-"users_id" int4,
-"roles_id" int4,
-PRIMARY KEY ("id") 
-)
-WITHOUT OIDS;
-
-CREATE TABLE "history" (
-"id" int4 NOT NULL,
+"id" serial4 NOT NULL,
 "users_id" int4 NOT NULL,
-"contents_id" int4 NOT NULL,
-"action_type_id" int4,
-"created" timestamp(255) NOT NULL,
+"roles_id" int4 NOT NULL,
 PRIMARY KEY ("id") 
 )
 WITHOUT OIDS;
 
-CREATE TABLE "contents" (
-"id" int4 NOT NULL,
+CREATE TABLE "events" (
+"id" serial4 NOT NULL,
+"users_id" int4 DEFAULT NULL,
+"anonymous_user_cookie" text DEFAULT NULL,
+"meshes_id" int4 NOT NULL,
+"action_types_id" int4 NOT NULL,
+"created" timestamp(0) NOT NULL DEFAULT now(),
+PRIMARY KEY ("id") 
+)
+WITHOUT OIDS;
+
+CREATE TABLE "meshes" (
+"id" serial4 NOT NULL,
 "users_id" int4 NOT NULL,
 "title" text NOT NULL,
-"description" text,
+"description" text DEFAULT NULL,
+"vertices" int8 DEFAULT NULL,
+"cells" int8 DEFAULT NULL,
 "filename" text NOT NULL,
-"path" text NOT NULL,
-"size" float8 NOT NULL,
-"type" text NOT NULL,
-"created" timestamp(255) NOT NULL,
-"updated" timestamp(0),
+"filepath" text NOT NULL,
+"filesize" int8 NOT NULL,
+"filetype" text NOT NULL,
+"created" timestamp(0) NOT NULL DEFAULT now(),
+"updated" timestamp(0) DEFAULT NULL,
 PRIMARY KEY ("id") 
 )
 WITHOUT OIDS;
 
 CREATE TABLE "tags" (
-"id" int4 NOT NULL,
-"title" text,
-"categories_id" int4,
+"id" serial4 NOT NULL,
+"categories_id" int4 NOT NULL,
+"title" text NOT NULL,
+"protected" bool NOT NULL DEFAULT false,
+"created" timestamp(0) NOT NULL DEFAULT now(),
+"updated" timestamp(0) DEFAULT NULL,
 PRIMARY KEY ("id") 
 )
 WITHOUT OIDS;
 
-CREATE TABLE "contents_tags" (
-"id" int4 NOT NULL,
+CREATE TABLE "meshes_tags" (
+"id" serial4 NOT NULL,
 "tags_id" int4 NOT NULL,
-"contents_id" int4 NOT NULL,
+"meshes_id" int4 NOT NULL,
 PRIMARY KEY ("id") 
 )
 WITHOUT OIDS;
 
 CREATE TABLE "categories" (
-"id" int4 NOT NULL,
+"id" serial4 NOT NULL,
 "title" text NOT NULL,
+"protected" bool NOT NULL DEFAULT false,
+"created" timestamp(0) NOT NULL DEFAULT now(),
+"updated" timestamp(0) DEFAULT NULL,
 PRIMARY KEY ("id") 
 )
 WITHOUT OIDS;
 
 CREATE TABLE "action_types" (
-"id" int4 NOT NULL,
+"id" serial4 NOT NULL,
 "title" text NOT NULL,
+"sentence_title" text NOT NULL,
 PRIMARY KEY ("id") 
 )
 WITHOUT OIDS;
@@ -84,10 +103,9 @@ WITHOUT OIDS;
 ALTER TABLE "users_roles" ADD CONSTRAINT "fk_users_roles_users" FOREIGN KEY ("users_id") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "users_roles" ADD CONSTRAINT "fk_users_roles_roles" FOREIGN KEY ("roles_id") REFERENCES "roles" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "tags" ADD CONSTRAINT "fk_tags_categories" FOREIGN KEY ("categories_id") REFERENCES "categories" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "contents" ADD CONSTRAINT "fk_contents_users" FOREIGN KEY ("users_id") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "contents_tags" ADD CONSTRAINT "fk_contents_tags_tags_id" FOREIGN KEY ("tags_id") REFERENCES "tags" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "contents_tags" ADD CONSTRAINT "fk_contents_tags_contents" FOREIGN KEY ("contents_id") REFERENCES "contents" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "history" ADD CONSTRAINT "fk_history_contents" FOREIGN KEY ("contents_id") REFERENCES "contents" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "history" ADD CONSTRAINT "fk_history_users" FOREIGN KEY ("users_id") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
-ALTER TABLE "history" ADD CONSTRAINT "fk_history_type" FOREIGN KEY ("action_type_id") REFERENCES "action_types" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
+ALTER TABLE "meshes" ADD CONSTRAINT "fk_contents_users" FOREIGN KEY ("users_id") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "meshes_tags" ADD CONSTRAINT "fk_meshes_tags_tags" FOREIGN KEY ("tags_id") REFERENCES "tags" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "meshes_tags" ADD CONSTRAINT "fk_meshes_tags_meshes" FOREIGN KEY ("meshes_id") REFERENCES "meshes" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "events" ADD CONSTRAINT "fk_history_meshes" FOREIGN KEY ("meshes_id") REFERENCES "meshes" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "events" ADD CONSTRAINT "fk_history_users" FOREIGN KEY ("users_id") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "events" ADD CONSTRAINT "fk_history_action_types" FOREIGN KEY ("action_types_id") REFERENCES "action_types" ("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "authors": "Sarah Pierson & Guillaume Peres",
   "dependencies": {
-    "express": "^4.16.1"
+    "express": "^4.16.1",
+    "pg": "^7.3.0",
+    "pg-hstore": "^2.3.2",
+    "sequelize": "^4.14.0"
   }
 }

@@ -26,12 +26,21 @@ app.use(function(request, response, next) {
 // Liste les catégories avec leurs tags associés
 app.get("/categories/list/", function(request, response) {
     Category.findAll({
+        "order": [
+            ["title", "ASC"],
+            ["id", "ASC"]
+        ],
         "include": [{
-            "model": Tag
+            "model": Tag,
+            "order": [
+                ["title", "ASC"],
+                ["id", "ASC"]
+            ]
         }]
     }).then(function(categories) {
-        out = categories;
-        console.log(out);
+        let out = categories.filter(function(category) {
+            return category.tags.length > 0;
+        });
         response.json(out);
     });
 });

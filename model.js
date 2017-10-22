@@ -1,7 +1,8 @@
 const Sequelize = require("sequelize");
 const sequelize = new Sequelize("maillage", "guillaume", "la pomme est verte", {
     "host": "localhost",
-    "dialect": "postgres"
+    "dialect": "postgres",
+    "port": 5432
 });
 
 // categories

@@ -44,7 +44,7 @@ INSERT INTO meshes_tags (id, tags_id, meshes_id) VALUES
 (15, 3, 8),
 (16, 4, 8)
 ;
-SELECT pg_catalog.setval('meshes_tags_id_seq', 8, true);
+SELECT pg_catalog.setval('meshes_tags_id_seq', 16, true);
 
 INSERT INTO images (id, meshes_id, filepath, uri, thumb_path, thumb_uri, is_default) VALUES
 (1, 1, '/web/maillage_api/public/up/meshes/img/B1.png', '/up/meshes/img/B1.png', '/web/maillage_api/public/up/meshes/img/B1_thumb.png', '/up/meshes/img/B1_thumb.png', TRUE),

@@ -64,6 +64,27 @@ app.get("/categories/list/", function(request, response) {
     });
 });
 
+// Recherche de fichiers de maillage
+app.get("/meshes/search/", function(request, response) {
+    Mesh.findAll({
+        "include": [{
+            "model": Tag,
+        }, {
+            "model": Image,
+            "where": {
+                "isDefault": true
+            }
+        }, {
+            "model": User
+        }],
+        "order": [
+            ["id", "ASC"]
+        ]
+    }).then(function(meshes) {
+        response.json(meshes);
+    });
+});
+
 // Lance le serveur
 app.listen(LISTEN_PORT, function() {
     console.log("Le serveur est lancé et écoute sur le port : "+LISTEN_PORT);

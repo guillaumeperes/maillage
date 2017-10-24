@@ -160,6 +160,10 @@ const Mesh = sequelize.define("meshes", {
         "type": Sequelize.TEXT,
         "allowNull": false
     },
+    "uri": {
+        "type": Sequelize.TEXT,
+        "allowNull": false
+    },
     "filesize": {
         "type": Sequelize.BIGINT,
         "allowNull": false
@@ -214,6 +218,11 @@ const Image = sequelize.define("images", {
         "field": "is_default",
         "defaultValue": false
     }
+}, {
+    "timestamps": false,
+    "paranoid": false,
+    "freezeTableName": true,
+    "tableName": "images"
 });
 
 // meshes_tags

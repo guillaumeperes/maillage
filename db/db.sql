@@ -99,6 +99,18 @@ PRIMARY KEY ("id")
 )
 WITHOUT OIDS;
 
+CREATE TABLE "images" (
+"id" int4 NOT NULL,
+"meshes_id" int4 NOT NULL,
+"filepath" text NOT NULL,
+"uri" text NOT NULL,
+"thumb_path" text NOT NULL,
+"thumb_uri" text NOT NULL,
+"is_default" bool NOT NULL DEFAULT false,
+PRIMARY KEY ("id") 
+)
+WITHOUT OIDS;
+
 
 ALTER TABLE "users_roles" ADD CONSTRAINT "fk_users_roles_users" FOREIGN KEY ("users_id") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "users_roles" ADD CONSTRAINT "fk_users_roles_roles" FOREIGN KEY ("roles_id") REFERENCES "roles" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -109,3 +121,5 @@ ALTER TABLE "meshes_tags" ADD CONSTRAINT "fk_meshes_tags_meshes" FOREIGN KEY ("m
 ALTER TABLE "events" ADD CONSTRAINT "fk_history_meshes" FOREIGN KEY ("meshes_id") REFERENCES "meshes" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "events" ADD CONSTRAINT "fk_history_users" FOREIGN KEY ("users_id") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "events" ADD CONSTRAINT "fk_history_action_types" FOREIGN KEY ("action_types_id") REFERENCES "action_types" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "images" ADD CONSTRAINT "fk_images_meshes" FOREIGN KEY ("meshes_id") REFERENCES "meshes" ("id") ON DELETE CASCADE ON UPDATE CASCADE;
+

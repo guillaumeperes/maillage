@@ -101,7 +101,7 @@ PRIMARY KEY ("id")
 WITHOUT OIDS;
 
 CREATE TABLE "images" (
-"id" int4 NOT NULL,
+"id" serial4 NOT NULL,
 "meshes_id" int4 NOT NULL,
 "filepath" text NOT NULL,
 "uri" text NOT NULL,

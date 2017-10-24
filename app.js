@@ -6,11 +6,13 @@ const LISTEN_PORT = 55555;
 
 // Classes du modèle
 const model = require("./model");
+const sequelize = model.sequelize;
 const Category = model.Category;
 const Tag = model.Tag;
 const Event = model.Event;
 const ActionType = model.ActionType;
 const Mesh = model.Mesh;
+const Image = model.Image;
 const MeshTag = model.MeshTag;
 const Role = model.Role;
 const User = model.User;
@@ -23,24 +25,41 @@ app.use(function(request, response, next) {
     next();
 });
 
+// Fichiers statiques 
+app.use(express.static(__dirname + "/public"));
+
 // Liste les catégories avec leurs tags associés
 app.get("/categories/list/", function(request, response) {
     Category.findAll({
-        "order": [
-            ["title", "ASC"],
-            ["id", "ASC"]
-        ],
         "include": [{
             "model": Tag,
-            "order": [
-                ["title", "ASC"],
-                ["id", "ASC"]
-            ]
-        }]
+            "include": {
+                "model": MeshTag,
+            }
+        }],
+        "order": [
+            ["title", "ASC"],
+            ["id", "ASC"],
+            [Tag, "title", "ASC"],
+            [Tag, "id", "ASC"]
+        ]
     }).then(function(categories) {
-        let out = categories.filter(function(category) {
-            return category.tags.length > 0;
+        let out = categories.map(function(category) {
+            let tags = category.tags.filter(function(tag) {
+                return tag.meshesTags.length > 0;
+            });
+            tags = tags.map(function(tag) {
+                let json = tag.toJSON();
+                json.occurences = tag.meshesTags.length;
+                return json;
+            });
+            let json = category.toJSON();
+            json.tags = tags;
+            return json;
         });
+        out = out.filter(function(category) {
+            return category.tags.length > 0;
+        })
         response.json(out);
     });
 });

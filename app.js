@@ -134,7 +134,31 @@ app.get("/categories/list/", function(request, response) {
 * Recherche de fichiers de maillage
 */
 app.get("/meshes/search/", function(request, response) {
+    if (typeof request.query.filters === "object" && request.query.filters.length > 0) {
+        var filters = request.query.filters.map(function(filter) {
+            return parseInt(filter, 10) || 0;
+        });
+        filters = filters.filter(function(filter) {
+            return filter > 0;
+        });
+    }
+
+    let wheres = {};
+
+    // Recherche à facettes
+    if (typeof filters === "object" && filters.length > 0) {
+        const filtersBaseQuery = "(SELECT DISTINCT meshes.id FROM meshes INNER JOIN meshes_tags ON meshes.id = meshes_tags.meshes_id WHERE meshes_tags.tags_id = ?)";
+        const filtersQueryArr = filters.map(function(filter) {
+            return filtersBaseQuery.replace("?", filter);
+        });
+        const filtersQuery = filtersQueryArr.join(" INTERSECT ");
+        wheres.id = {
+            $in: sequelize.literal("(" + filtersQuery + ")")
+        };
+    }
+
     Mesh.findAll({
+        "where": wheres,
         "include": [{
             "model": Tag,
         }, {
@@ -142,8 +166,6 @@ app.get("/meshes/search/", function(request, response) {
             "where": {
                 "isDefault": true
             }
-        }, {
-            "model": User
         }],
         "order": [
             ["id", "ASC"],

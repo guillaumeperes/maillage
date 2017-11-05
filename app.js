@@ -43,7 +43,10 @@ app.use(express.static(__dirname + "/public"));
 app.get("/categories/list/", function(request, response) {
     if (typeof request.query.filters === "object" && request.query.filters.length > 0) {
         var filters = request.query.filters.map(function(filter) {
-            return parseInt(filter, 10);
+            return parseInt(filter, 10) || 0;
+        });
+        filters = filters.filter(function(filter) {
+            return filter > 0;
         });
     }
     Mesh.findAll({

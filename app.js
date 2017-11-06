@@ -49,7 +49,23 @@ app.get("/categories/list/", function(request, response) {
             return filter > 0;
         });
     }
+
+    let wheres = {};
+
+    // Recherche à facettes
+    if (typeof filters === "object" && filters.length > 0) {
+        const filtersBaseQuery = "(SELECT DISTINCT meshes.id FROM meshes INNER JOIN meshes_tags ON meshes.id = meshes_tags.meshes_id WHERE meshes_tags.tags_id = ?)";
+        const filtersQueryArr = filters.map(function(filter) {
+            return filtersBaseQuery.replace("?", filter);
+        });
+        const filtersQuery = filtersQueryArr.join(" INTERSECT ");
+        wheres.id = {
+            $in: sequelize.literal("(" + filtersQuery + ")")
+        };
+    }
+
     Mesh.findAll({
+        "where": wheres,
         "include": [{
             "model": Tag,
             "include": [{
@@ -57,22 +73,7 @@ app.get("/categories/list/", function(request, response) {
             }]
         }]
     }).then(function(meshes) {
-        // On commence par retirer les contenus qui n'ont pas les facettes recherchées
-        if (typeof filters === "object" && filters.length > 0) {
-            meshes = meshes.filter(function(mesh) {
-                const tagsIds = mesh.tags.map(function(tag) {
-                    return tag.id;
-                });
-                let accept = true;
-                filters.forEach(function(filter) {
-                    if (tagsIds.indexOf(filter) === -1) {
-                        accept = false;
-                    }
-                });
-                return accept;
-            });
-        }
-        // On rassemble ensuite toutes les facettes des contenus qui correspondent à la recherche
+        // On récupère les tags des contenus qu'on a récupérés
         let tagsIds = [];
         meshes.forEach(function(mesh) {
             mesh.tags.forEach(function(tag) {
@@ -96,7 +97,7 @@ app.get("/categories/list/", function(request, response) {
                 [Tag, "title", "ASC"],
                 [Tag, "id", "ASC"]
             ]
-        }).then(function(categories) {
+        }).then(function(categories) {
             const out = categories.map(function(category) {
                 let tags = category.tags.map(function(tag) {
                     if (typeof filters === "object" && filters.length > 0) {

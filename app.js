@@ -132,6 +132,69 @@ app.get("/categories/list/", function(request, response) {
 });
 
 /**
+* Liste des options de tri des fichiers de maillage supportés par l'application
+*/
+app.set("meshesSorts", [
+    {
+        "name": "title",
+        "label": "Ordre alphabétique",
+        "column": "title",
+        "reverse": false,
+        "default": true
+    }, {
+        "name": "title-reverse",
+        "label": "Ordre alphabétique inverse",
+        "column": "title",
+        "reverse": true
+    }, {
+        "name": "cells",
+        "label": "Nombre de cellules : croissant",
+        "column": "cells",
+        "reverse": false
+    }, {
+        "name": "cells-reverse",
+        "label": "Nombre de cellules : décroissant",
+        "column": "cells",
+        "reverse": true
+    }, {
+        "name": "vertices",
+        "label": "Nombre de sommets : croissant",
+        "column": "vertices",
+        "reverse": false
+    }, {
+        "name": "vertices-reverse",
+        "label": "Nombre de sommets : décroissant",
+        "column": "vertices",
+        "reverse": true
+    }, {
+        "name": "created",
+        "label": "Du plus ancien au plus récent",
+        "column": "created",
+        "reverse": false
+    }, {
+        "name": "created-reverse",
+        "label": "Du plus récent au plus ancien",
+        "column": "created",
+        "reverse": true
+    }
+]);
+
+/**
+* Options disponibles pour trier les fichiers de maillage
+*/
+app.get("/meshes/sorts/", function(request, response) {
+    const sorts = app.get("meshesSorts");
+    const out = sorts.map(function(sort) {
+        return {
+            "name": sort.name,
+            "label": sort.label,
+            "default": sort.default ? true : false
+        };
+    });
+    response.json(out);
+});
+
+/**
 * Recherche de fichiers de maillage
 */
 app.get("/meshes/search/", function(request, response) {

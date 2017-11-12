@@ -288,7 +288,25 @@ app.get("/mesh/:mesh_id/view/", checkMeshExists, function(request, response) {
             "model": User
         }]
     }).then(function(mesh) {
-        response.json(mesh).end();
+        const tagsIds = mesh.tags.map(function(tag) {
+            return tag.id;
+        });
+        Category.findAll({
+            "include": {
+                "model": Tag,
+                "where": Sequelize.or({"id": tagsIds})
+            },
+            "order": [
+                ["title", "ASC"],
+                ["id", "ASC"],
+                [Tag, "title", "ASC"],
+                [Tag, "id", "ASC"]
+            ]
+        }).then(function(categories) {
+            mesh = mesh.toJSON();
+            mesh.tagsCategories = categories;
+            response.json(mesh).end();
+        });
     });
 });
 

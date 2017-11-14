@@ -1,7 +1,8 @@
 const Sequelize = require("sequelize");
 const sequelize = new Sequelize("maillage", "guillaume", "la pomme est verte", {
     "host": "localhost",
-    "dialect": "postgres"
+    "dialect": "postgres",
+    "port": 5432
 });
 
 // categories
@@ -159,6 +160,10 @@ const Mesh = sequelize.define("meshes", {
         "type": Sequelize.TEXT,
         "allowNull": false
     },
+    "uri": {
+        "type": Sequelize.TEXT,
+        "allowNull": false
+    },
     "filesize": {
         "type": Sequelize.BIGINT,
         "allowNull": false
@@ -174,6 +179,50 @@ const Mesh = sequelize.define("meshes", {
     "paranoid": false,
     "freezeTableName": true,
     "tableName": "meshes"
+});
+
+// images
+const Image = sequelize.define("images", {
+    "id": {
+        "type": Sequelize.INTEGER,
+        "primaryKey": true,
+        "allowNull": false,
+        "autoIncrement": true
+    },
+    "meshesId": {
+        "type": Sequelize.INTEGER,
+        "allowNull": false,
+        "field": "meshes_id"
+    },
+    "filepath": {
+        "type": Sequelize.TEXT,
+        "allowNull": false
+    },
+    "uri": {
+        "type": Sequelize.TEXT,
+        "allowNull": false
+    },
+    "thumbPath": {
+        "type": Sequelize.TEXT,
+        "allowNull": false,
+        "field": "thumb_path"
+    },
+    "thumbUri": {
+        "type": Sequelize.TEXT,
+        "allowNull": false,
+        "field": "thumb_uri"
+    },
+    "isDefault": {
+        "type": Sequelize.BOOLEAN,
+        "allowNull": false,
+        "field": "is_default",
+        "defaultValue": false
+    }
+}, {
+    "timestamps": false,
+    "paranoid": false,
+    "freezeTableName": true,
+    "tableName": "images"
 });
 
 // meshes_tags
@@ -332,6 +381,24 @@ Tag.belongsToMany(Mesh, {
     "foreignKey": "tagsId",
     "otherKey": "meshesId"
 });
+MeshTag.belongsTo(Mesh, {
+    "foreignKey": "meshesId"
+});
+Mesh.hasMany(MeshTag, {
+    "foreignKey": "meshesId"
+});
+MeshTag.belongsTo(Tag, {
+    "foreignKey": "tagsId"
+});
+Mesh.hasMany(Image, {
+    "foreignKey": "meshesId"
+});
+Image.belongsTo(Mesh, {
+    "foreignKey": "meshesId"
+});
+Tag.hasMany(MeshTag, {
+    "foreignKey": "tagsId"
+});
 User.belongsToMany(Role, {
     "through": UserRole,
     "foreignKey": "usersId",
@@ -344,11 +411,13 @@ Role.belongsToMany(User, {
 });
 
 module.exports = {
+    "sequelize": sequelize,
     "Category": Category,
     "Tag": Tag,
     "Event": Event,
     "ActionType": ActionType,
     "Mesh": Mesh,
+    "Image": Image,
     "MeshTag": MeshTag,
     "Role": Role,
     "User": User,

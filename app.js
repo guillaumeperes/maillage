@@ -152,6 +152,27 @@ app.get("/categories/list/", function(request, response) {
 });
 
 /**
+* Liste des utilisateurs
+*/
+app.get("/users/list/", function(request, response){
+    User.findAll({
+            "include": [{
+                "model": Role
+            }],
+    "order": [
+                ["email", "ASC"],
+                ["id", "ASC"],
+                [Role, "title", "ASC"],
+                [Role, "id", "ASC"]
+            ]
+        }).then(function(users) { 
+            response.json(users);
+        }); 
+});
+
+
+
+/**
 * Liste des options de tri des fichiers de maillage supportés par l'application
 */
 app.set("meshesSorts", [

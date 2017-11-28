@@ -40,6 +40,26 @@ app.use(express.static(__dirname + "/public"));
 /**
 * Liste les catégories disponibles avec leurs tags associés
 */
+app.get("/categories/alltags/", function(request, response){
+ // On recherche ensuite dans la db les catégorie et tags associée
+        Category.findAll({
+            "include": [{
+                "model": Tag
+            }],
+    "order": [
+                ["title", "ASC"],
+                ["id", "ASC"],
+                [Tag, "title", "ASC"],
+                [Tag, "id", "ASC"]
+            ]
+        }).then(function(categories) { 
+            response.json(categories);
+        }); 
+});
+
+/**
+* Liste les catégories disponibles avec leurs tags associés
+*/
 app.get("/categories/list/", function(request, response) {
     if (typeof request.query.filters === "object" && request.query.filters.length > 0) {
         var filters = request.query.filters.map(function(filter) {

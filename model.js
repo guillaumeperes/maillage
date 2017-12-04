@@ -1,3 +1,6 @@
+const hash = require("hash.js");
+const md5 = require("md5");
+const uniqid = require("uniqid");
 const Sequelize = require("sequelize");
 const sequelize = new Sequelize("maillage", "guillaume", "la pomme est verte", {
     "host": "localhost",
@@ -317,6 +320,16 @@ const User = sequelize.define("users", {
     "freezeTableName": true,
     "tableName": "users"
 });
+
+// Génère un salt aléatoire basé sur l'heure du système
+User.generateSalt = function() {
+    return md5(uniqid());
+};
+
+// Hache le mot de passe avec le salt passé en paramètre
+User.encryptPassword = function(text, salt) {
+    return hash.sha512().update(text + "/" + salt).digest('hex');
+};
 
 // users_roles
 const UserRole = sequelize.define("usersRoles", {

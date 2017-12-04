@@ -1,5 +1,7 @@
 const Sequelize = require("sequelize");
 const express = require("express");
+const validator = require("email-validator");
+const bodyParser = require("body-parser");
 const app = express();
 
 /**
@@ -37,6 +39,16 @@ app.use(function(request, response, next) {
 * Sert les fichiers statiques
 */
 app.use(express.static(__dirname + "/public"));
+
+/**
+* Parse les requêtes HTTP avec du JSON
+*/
+app.use(bodyParser.json());
+
+/**
+* Parse les requêtes HTTP avec des données issues d'un formulaire
+*/
+app.use(bodyParser.urlencoded({ extended: true }));
 
 /**
 * Liste les catégories disponibles avec leurs tags associés
@@ -364,6 +376,100 @@ app.post("/mesh/:mesh_id/edit/", checkMeshExists, function(request, response) {
 */
 app.delete("/mesh/:mesh_id/delete/", checkMeshExists, function(request, response) {
     // TODO
+});
+
+/**
+* Inscription
+*/
+app.post("/register", function(request, response) {
+    const data = request.body;
+
+    // Vérification des données
+    if (data.email == null || !data.email.length || !validator.validate(data.email)) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Merci de renseigner une adresse e-mail valide."
+        }).end();
+        return;
+    }
+    if (data.password == null || !data.password.length) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Merci de renseigner votre mot de passe."
+        }).end();
+        return;
+    }
+    if (data.password.length < 5) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Votre mot de passe doit comporter au moins 5 caractères."
+        }).end();
+        return;
+    }
+    if (data.password2 == null || !data.password2.length) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Merci de confirmer votre mot de passe."
+        }).end();
+        return;
+    }
+    if (data.password !== data.password2) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Votre mot de passe et sa confirmation doivent être identiques."
+        }).end();
+        return;
+    }
+
+    // On vérifie qu'il n'y a pas déjà un user avec l'adresse e-mail renseignée
+    User.count({
+        "where": {
+            "email": data.email
+        }
+    }).then(function(count) {
+        if (count > 0) {
+            // Il y a déjà un utilisateur avec l'adresse e-mail renseignée
+            response.status(500).json({
+                "code": 500,
+                "error": "Cette adresse e-mail est déjà associée à un compte existant."
+            }).end();
+            return;
+        } else {
+            // Nouvelle adresse e-mail, on insère le nouvel utilisateur dans la base de données
+            const salt = User.generateSalt();
+            let o = {
+                "email": data.email.toLocaleLowerCase().trim(),
+                "salt": salt,
+                "password": User.encryptPassword(data.password, salt)
+            };
+            if (data.firstname != null && data.firstname.length) {
+                o.firstname = data.firstname.trim();
+            }
+            if (data.lastname != null && data.lastname.length) {
+                o.lastname = data.lastname.toLocaleUpperCase().trim();
+            }
+            User.create(o).then(function() {
+                response.status(200).json({
+                    "code": 200,
+                    "message": "Votre compte utilisateur a bien été créé."
+                }).end();
+                return;
+            }).catch(function() {
+                response.status(500).json({
+                    "code": 500,
+                    "error": "Une erreur s'est produite. Merci de réessayer l'opération."
+                }).end();
+                return;
+            });
+        }
+    });
+});
+
+/**
+* Connexion
+*/
+app.post("/login", function(request, response) {
+
 });
 
 /**

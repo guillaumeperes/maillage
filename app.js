@@ -2,12 +2,18 @@ const Sequelize = require("sequelize");
 const express = require("express");
 const validator = require("email-validator");
 const bodyParser = require("body-parser");
+const jwt = require("jsonwebtoken");
 const app = express();
 
 /**
 * Port sur lequel Nodejs va écouter
 */
 const LISTEN_PORT = 55555;
+
+/**
+* Clé utilisée pour encrypter les JWT
+*/
+const privateKey = "b02f6cbf19d00c656095d41d810e8953";
 
 /**
 * Charge les classes du modèle
@@ -469,7 +475,106 @@ app.post("/register", function(request, response) {
 * Connexion
 */
 app.post("/login", function(request, response) {
+    const data = request.body;
 
+    // Vérification des données
+    if (data.email == null || !data.email.length || !validator.validate(data.email)) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Merci de renseigner une adresse e-mail valide."
+        }).end();
+        return;
+    }
+    if (data.password == null || !data.password.length) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Merci de renseigner votre mot de passe."
+        }).end();
+        return;
+    }
+
+    // Recherche de l'utilisateur dans la base de données
+    User.findOne({
+        "where": {
+            "email": data.email
+        }
+    }).then(function(user) {
+        // Utilisateur existant ?
+        if (user == null) {
+            response.status(500).json({
+                "code": 500,
+                "error": "Cette adresse e-mail ne correspond à aucun compte existant."
+            }).end();
+            return;
+        }
+        // Utilisateur validé par un admin ?
+        if (user.confirmed == null) {
+            response.status(500).json({
+                "code": 500,
+                "error": "Ce compte n'a pas encore été activé."
+            }).end();
+            return;
+        }
+        // Utilisateur non supprimé par un admin ?
+        if (user.deleted != null) {
+            response.status(500).json({
+                "code": 500,
+                "error": "Ce compte a été désactivé."
+            }).end();
+            return;
+        }
+        // Mot de passe ok ?
+        if (user.password != User.encryptPassword(data.password, user.salt)) {
+            response.status(500).json({
+                "code": 500,
+                "error": "Mot de passe incorrect."
+            }).end();
+            return;
+        }
+
+        // Création d'un json web token
+        // https://www.npmjs.com/package/jsonwebtoken
+        const d = new Date();
+        const payload = {
+            "uid": user.id,
+            "nbf": d.getTime() / 1000,
+            "iat": d.getTime() / 1000,
+            "exp": (d.getTime() / 1000) + (24 * 60 * 60), // 1 jour
+            "iss": "/"
+        };
+        const token = jwt.sign(payload, privateKey);
+        response.status(200).json({
+            "code": 200,
+            "message": "Vous vous êtes connecté avec succès.",
+            "data": {
+                "createdAt": payload.nbf,
+                "expiresAt": payload.exp,
+                "token": token
+            }
+        }).end();
+        return;
+    }).catch(function() {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite. Merci de retenter l'opération."
+        }).end();
+        return;
+    });
+});
+
+/**
+* Middleware
+* Vérifie la validité du token de connexion envoyé par le client
+*/
+const checkUserTokenIsValid = function(request, response, next) {
+
+};
+
+/**
+* Permet l'obtention d'un nouveau token de connexion avant que celui qui est envoyé n'expire
+*/
+app.get("/user/revive/:token", checkUserTokenIsValid, function(request, response) {
+    
 });
 
 /**

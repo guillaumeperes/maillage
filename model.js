@@ -293,6 +293,10 @@ const User = sequelize.define("users", {
         "type": Sequelize.TEXT,
         "allowNull": false
     },
+    "salt": {
+        "type": Sequelize.TEXT,
+        "allowNull": false
+    },
     "firstname": {
         "type": Sequelize.TEXT,
         "allowNull": true

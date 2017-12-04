@@ -7,6 +7,7 @@ CREATE TABLE "users" (
 "id" serial4 NOT NULL,
 "email" text NOT NULL,
 "password" text NOT NULL,
+"salt" text NOT NULL,
 "firstname" text DEFAULT NULL,
 "lastname" text DEFAULT NULL,
 "created" timestamp(0) NOT NULL DEFAULT now(),

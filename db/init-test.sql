@@ -3,8 +3,8 @@
 -- Données de test --
 ---------------------
 
-INSERT INTO users (id, email, password, firstname, lastname, confirmed) VALUES
-(1, 'guillaumeperes10@gmail.com', 'xxx', 'Guillaume', 'Peres', now())
+INSERT INTO users (id, email, password, salt, firstname, lastname, confirmed) VALUES
+(1, 'guillaumeperes10@gmail.com', 'xxx', 'salt', 'Guillaume', 'Peres', now())
 ;
 SELECT pg_catalog.setval('users_id_seq', 1, true);
 

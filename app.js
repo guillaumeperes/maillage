@@ -567,14 +567,67 @@ app.post("/login", function(request, response) {
 * Vérifie la validité du token de connexion envoyé par le client
 */
 const checkUserTokenIsValid = function(request, response, next) {
-
+    const token = request.body.token || request.query.token || request.headers["x-access-token"];
+    if (!token) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Le token de connexion est absent."
+        }).end();
+        return;
+    }
+    try {
+        const payload = jwt.verify(token, privateKey);
+        User.findById(payload.uid).then(function(user){
+            next();
+        }).catch(function(error) {
+            response.status(500).json({
+                "code": 500,
+                "error": "Le token de connexion est invalide."
+            }).end();
+            return;
+        });
+    } catch (error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Le token de connexion est invalide."
+        }).end();
+        return;
+    }
 };
 
 /**
 * Permet l'obtention d'un nouveau token de connexion avant que celui qui est envoyé n'expire
 */
-app.get("/user/revive/:token", checkUserTokenIsValid, function(request, response) {
-    
+app.get("/user/revive", checkUserTokenIsValid, function(request, response) {
+    const token = request.body.token || request.query.token || request.headers["x-access-token"];
+    const payload = jwt.verify(token, privateKey);
+    User.findById(payload.uid).then(function(user) {
+        const d = new Date();
+        const newPayload = {
+            "uid": user.id,
+            "nbf": Math.round(d.getTime() / 1000),
+            "iat": Math.round(d.getTime() / 1000),
+            "exp": Math.round((d.getTime() / 1000) + (24 * 60 * 60)), // 1 jour
+            "iss": "/"
+        };
+        const newToken = jwt.sign(newPayload, privateKey);
+        response.status(200).json({
+            "code": 200,
+            "message": "Le token de connexion a été régénéré avec succès.",
+            "data": {
+                "createdAt": newPayload.nbf,
+                "expiresAt": newPayload.exp,
+                "token": newToken
+            }
+        }).end();
+        return;
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur inconnue s'est produite."
+        }).end();
+        return;
+    });
 });
 
 /**

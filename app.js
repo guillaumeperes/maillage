@@ -537,9 +537,9 @@ app.post("/login", function(request, response) {
         const d = new Date();
         const payload = {
             "uid": user.id,
-            "nbf": d.getTime() / 1000,
-            "iat": d.getTime() / 1000,
-            "exp": (d.getTime() / 1000) + (24 * 60 * 60), // 1 jour
+            "nbf": Math.round(d.getTime() / 1000),
+            "iat": Math.round(d.getTime() / 1000),
+            "exp": Math.round((d.getTime() / 1000) + (24 * 60 * 60)), // 1 jour
             "iss": "/"
         };
         const token = jwt.sign(payload, privateKey);

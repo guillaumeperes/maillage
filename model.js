@@ -24,6 +24,11 @@ const Category = sequelize.define("categories", {
         "type": Sequelize.BOOLEAN,
         "allowNull": false,
         "defaultValue": false
+    },
+    "color": {
+        "type": Sequelize.STRING(7),
+        "allowNull": false,
+        "defaultValue": "#e8e8e8"
     }
 }, {
     "createdAt": "created",

@@ -86,6 +86,7 @@ WITHOUT OIDS;
 CREATE TABLE "categories" (
 "id" serial4 NOT NULL,
 "title" text NOT NULL,
+"color" character varying(7) NOT NULL DEFAULT '#e8e8e8',
 "protected" bool NOT NULL DEFAULT false,
 "created" timestamp(0) NOT NULL DEFAULT now(),
 "updated" timestamp(0) DEFAULT NULL,

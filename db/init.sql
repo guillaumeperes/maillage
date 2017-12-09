@@ -14,10 +14,10 @@ SELECT pg_catalog.setval('roles_id_seq', 2, true);
 
 -- Catégories de tags
 
-INSERT INTO categories (id, title, protected) VALUES
-(1, 'Plan', TRUE),
-(2, 'Type de maillage', TRUE),
-(3, 'Type d''objet', TRUE)
+INSERT INTO categories (id, title, protected, color) VALUES
+(1, 'Plan', TRUE, '#e8e8e8'),
+(2, 'Type de maillage', TRUE, '#e8e8e8'),
+(3, 'Type d''objet', TRUE, '#e8e8e8')
 ;
 SELECT pg_catalog.setval('categories_id_seq', 3, true);
 

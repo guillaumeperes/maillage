@@ -56,24 +56,249 @@ app.use(bodyParser.json());
 */
 app.use(bodyParser.urlencoded({ extended: true }));
 
+
+/* ============================================================ */
+/*                      MIDDLEWARES                             */
+/* ============================================================ */
+
+/**
+* Vérifie que le fichier de maillage identifié par "mesh_id" existe dans la base de données
+*/
+const checkMeshExists = function(request, response, next) {
+    Mesh.findById(request.params.mesh_id).then(function(mesh) {
+        if (!mesh) {
+            response.status(404).json({
+                "code": 404,
+                "error": "Le fichier de maillage demandé n'a pas été trouvé."
+            }).end();
+            return;
+        } else {
+            next();
+        }
+    }).catch(function(error) {
+        response.status(404).json({
+            "code": 404,
+            "error": "Le fichier de maillage demandé n'a pas été trouvé."
+        }).end();
+        return;
+    });
+};
+
+/**
+* Vérifie la validité du token de connexion envoyé par le client
+*/
+const checkUserTokenIsValid = function(request, response, next) {
+    const token = request.body.token || request.query.token || request.headers["x-access-token"];
+    if (!token) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Le token de connexion est absent."
+        }).end();
+        return;
+    }
+    try {
+        const payload = jwt.verify(token, privateKey);
+        User.findById(payload.uid).then(function(user){
+            if (!user) {
+                response.status(500).json({
+                    "code": 500,
+                    "error": "Le token de connexion est invalide."
+                }).end();
+                return;
+            } else {
+                next();
+            }
+        }).catch(function(error) {
+            response.status(500).json({
+                "code": 500,
+                "error": "Le token de connexion est invalide."
+            }).end();
+            return;
+        });
+    } catch (error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Le token de connexion est invalide."
+        }).end();
+        return;
+    }
+};
+
+/**
+* Vérifie que l'utilisateur dont le token de connexion est passé en paramètre a le rôle d'administrateur
+*/
+const checkUserIsAdmin = function(request, response, next) {
+    const token = request.body.token || request.query.token || request.headers["x-access-token"];
+    const payload = jwt.verify(token, privateKey);
+    User.findById(payload.uid, {
+        "include": [{
+            "model": Role
+        }]
+    }).then(function(user) {
+        const role = user.roles.find(function(role) {
+            return role.name == "administrator";
+        });
+        if (!role) {
+            response.status(403).json({
+                "code": 403, 
+                "error": "Vous n'avez pas les permissions suffisantes pour accéder à cette page"
+            }).end();
+            return;
+        } else {
+            next();
+        }
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
+};
+
+/**
+* Vérifie que l'utilisateur dont le token de connexion est passé en paramètre a le rôle de contributeur
+*/
+const checkUserIsContributor = function(request, response, next) {
+    const token = request.body.token || request.query.token || request.headers["x-access-token"];
+    const payload = jwt.verify(token, privateKey);
+    User.findById(payload.uid, {
+        "include": [{
+            "model": Role
+        }]
+    }).then(function(user) {
+        const role = user.roles.find(function(role) {
+            return role.name == "contributor";
+        });
+        if (!role) {
+            response.status(403).json({
+                "code": 403, 
+                "error": "Vous n'avez pas les permissions suffisantes pour accéder à cette page"
+            }).end();
+            return;
+        } else {
+            next();
+        }
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
+};
+
+/**
+* Vérifie que la catégorie "categoryId" existe
+*/
+const checkCategoryExists = function(request, response, next) {
+    Category.findById(request.params.categoryId).then(function(category) {
+        if (!category) {
+            response.status(404).json({
+                "code": 404,
+                "error": "La catégorie demandée n'a pas été trouvée."
+            }).end();
+            return;
+        } else {
+            next();
+        }
+    }).catch(function(error) {
+        response.status(404).json({
+            "code": 404,
+            "error": "La catégorie demandée n'a pas été trouvée."
+        }).end();
+        return;
+    });
+};
+
+/**
+* Vérifie que la catégorie correspondant à "categoryId" n'est pas protégée
+*/
+const checkCategoryIsNotProtected = function(request, response, next) {
+    Category.findById(request.params.categoryId).then(function(category) {
+        if (category.protected) {
+            response.status(500).json({
+                "code": 500,
+                "error": "Cette catégorie est protégée."
+            }).end();
+            return;
+        }
+        next();
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur est survenue."
+        }).end();
+        return;
+    });
+};
+
+/**
+* Vérifie que le tag "tagId" existe
+*/
+const checkTagExists = function(request, response, next) {
+    Tag.findById(request.params.tagId).then(function(tag) {
+        if (!tag) {
+            response.status(404).json({
+                "code": 404,
+                "error": "Le tag demandé n'a pas été trouvé."
+            }).end();
+            return;
+        } else {
+            next();
+        }
+    }).catch(function(error) {
+        response.status(404).json({
+            "code": 404,
+            "error": "Le tag demandé n'a pas été trouvé."
+        }).end();
+        return;
+    });
+};
+
+/**
+* Vérifie que le tag "tagId" n'est pas protégé
+*/
+const checkTagIsNotProtected = function(request, response, next) {
+    Tag.findById(request.params.tagId).then(function(tag) {
+        if (tag.protected) {
+            response.status(500).json({
+                "code": 500,
+                "error": "Ce tag est protégé."
+            }).end();
+            return;
+        }
+        next();
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur est survenue."
+        }).end();
+        return;
+    });
+};
+
+/* ============================================================ */
+/*                        ROUTES                                */
+/* ============================================================ */
+
 /**
 * Liste les catégories disponibles avec leurs tags associés
 */
 app.get("/categories/alltags/", function(request, response){
- // On recherche ensuite dans la db les catégorie et tags associée
-        Category.findAll({
-            "include": [{
-                "model": Tag
-            }],
-    "order": [
-                ["title", "ASC"],
-                ["id", "ASC"],
-                [Tag, "title", "ASC"],
-                [Tag, "id", "ASC"]
-            ]
-        }).then(function(categories) { 
-            response.json(categories);
-        }); 
+    Category.findAll({
+        "include": [{
+            "model": Tag
+        }],
+        "order": [
+            ["title", "ASC"],
+            ["id", "ASC"],
+            [Tag, "title", "ASC"],
+            [Tag, "id", "ASC"]
+        ]
+    }).then(function(categories) { 
+        response.json(categories);
+    }); 
 });
 
 /**
@@ -188,8 +413,6 @@ app.get("/users/list/", function(request, response){
             response.json(users);
         }); 
 });
-
-
 
 /**
 * Liste des options de tri des fichiers de maillage supportés par l'application
@@ -309,33 +532,6 @@ app.put("/mesh/new/", function(request, response) {
 });
 
 /**
-* Middleware
-* Vérifie que le fichier de maillage identifié par "mesh_id" existe dans la base de données
-*/
-const checkMeshExists = function(request, response, next) {
-    Mesh.findById(request.params.mesh_id).then(function(mesh) {
-        if (mesh !== null) {
-            next();
-        } else {
-            response.status(404);
-            response.json({
-                "code": 404,
-                "error": "Le fichier de maillage demandé n'a pas été trouvé."
-            });
-            response.end();
-        }
-    }).catch(function(error) {
-        response.status(404);
-        response.json({
-            "code": 404,
-            "error": "Le fichier de maillage demandé n'a pas été trouvé."
-        });
-        response.end();
-        return;
-    });
-};
-
-/**
 * Récupère les données d'un fichier de maillage
 */
 app.get("/mesh/:mesh_id/view/", checkMeshExists, function(request, response) {
@@ -382,6 +578,268 @@ app.post("/mesh/:mesh_id/edit/", checkMeshExists, function(request, response) {
 */
 app.delete("/mesh/:mesh_id/delete/", checkMeshExists, function(request, response) {
     // TODO
+});
+
+/**
+* Créer une nouvelle catégorie
+*/
+app.put("/categories/new/", [checkUserTokenIsValid, checkUserIsAdmin], function(request, response) {
+    let data = request.body;
+
+    // Validation des données
+    if (data.title == null || !data.title.length) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Merci de renseigner un titre pour la nouvelle catégorie."
+        }).end();
+        return;
+    }
+    if (data.color == null || !data.color.length) {
+        data.color = "#e8e8e8";
+    }
+    if (/^#[0-9A-F]{6}$/i.test(data.color) == false) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Merci de renseigner une couleur sous la forme d'une représentation hexadécimale valide."
+        }).end();
+        return;
+    }
+
+    // Création de la catégorie
+    Category.create({
+        "title": data.title,
+        "color": data.color,
+        "protected": false
+    }).then(function(category) {
+        category = category.toJSON();
+        category.tags = [];
+        response.status(200).json({
+            "code": 200,
+            "message": "La catégorie a été créée avec succès.",
+            "data": {
+                "category": category
+            }
+        }).end();
+        return;
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
+});
+
+/**
+* Détail d'une catégorie
+*/
+app.get("/categories/:categoryId([0-9]*)/detail/", [checkUserTokenIsValid, checkUserIsAdmin, checkCategoryExists], function(request, response) {
+    Category.findById(request.params.categoryId).then(function(category) {
+        response.status(200).json({
+            "code": 200,
+            "message": "",
+            "data": {
+                "category": category
+            }
+        }).end();
+        return;
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
+});
+
+/**
+* Modifier une catégorie
+*/
+app.post("/categories/:categoryId([0-9]*)/edit/", [checkUserTokenIsValid, checkUserIsAdmin, checkCategoryExists, checkCategoryIsNotProtected], function(request, response) {
+    let data = request.body;
+
+    // Validation des données
+    if (data.title == null || !data.title.length) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Merci de renseigner un titre pour la nouvelle catégorie."
+        }).end();
+        return;
+    }
+    if (data.color == null || !data.color.length) {
+        data.color = "#e8e8e8";
+    }
+    if (/^#[0-9A-F]{6}$/i.test(data.color) == false) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Merci de renseigner une couleur sous la forme d'une représentation hexadécimale valide."
+        }).end();
+        return;
+    }
+
+    // Mise à jour de la catégorie
+    Category.findById(request.params.categoryId, {
+        "include": [{
+            "model": Tag
+        }]
+    }).then(function(category) {
+        category.update({
+            "title": data.title,
+            "color": data.color
+        }).then(function(category) {
+            response.status(200).json({
+                "code": 200,
+                "message": "La catégorie a été mise à jour avec succès.",
+                "data": {
+                    "category": category
+                }
+            }).end();
+            return;
+        });
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
+});
+
+/**
+* Supprime une catégorie
+*/
+app.delete("/categories/:categoryId([0-9]*)/delete/", [checkUserTokenIsValid, checkUserIsAdmin, checkCategoryExists, checkCategoryIsNotProtected], function(request, response) {
+    Category.findById(request.params.categoryId).then(function(category) {
+        category.destroy();
+        response.status(200).json({
+            "code": 200,
+            "message": "La catégorie a été supprimée avec succès"
+        }).end();
+        return;
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
+});
+
+/**
+* Créer un nouveau tag dans une catégorie
+*/
+app.put("/categories/:categoryId([0-9]*)/tags/new/", [checkUserTokenIsValid, checkUserIsAdmin, checkCategoryExists], function(request, response) {
+    let data = request.body;
+
+    // Vérification des données
+    if (data.title == null || !data.title.length) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Merci de renseigner un titre pour le nouveau tag."
+        }).end();
+        return;
+    }
+
+    // Création du nouveau tag
+    Tag.create({
+        "categoryId": request.params.categoryId,
+        "title": data.title
+    }).then(function(tag) {
+        response.status(200).json({
+            "code": 200,
+            "message": "Le tag a été créé avec succès.",
+            "data": {
+                "tag": tag
+            }
+        }).end();
+        return;
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
+});
+
+/**
+* Détail d'un tag
+*/
+app.get("/tags/:tagId([0-9]*)/detail/", [checkUserTokenIsValid, checkUserIsAdmin, checkTagExists], function(request, response) {
+    Tag.findById(request.params.tagId).then(function(tag) {
+        response.status(200).json({
+            "code": 200,
+            "message": "",
+            "data": {
+                "tag": tag
+            }
+        }).end();
+        return;
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
+});
+
+/**
+* Modifier un tag
+*/
+app.post("/tags/:tagId([0-9]*)/edit/", [checkUserTokenIsValid, checkUserIsAdmin, checkTagExists, checkTagIsNotProtected], function(request, response) {
+    let data = request.body;
+
+    // Vérification des données
+    if (data.title == null || !data.title.length) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Merci de renseigner un titre pour le nouveau tag."
+        }).end();
+        return;
+    }
+
+    // Mise à jour du tag
+    Tag.findById(request.params.tagId).then(function(tag) {
+        tag.update({
+            "title": data.title
+        }).then(function(tag) {
+            response.status(200).json({
+                "code": 200,
+                "message": "LE tag a été mis à jour avec succès.",
+                "data": {
+                    "tag": tag
+                }
+            }).end();
+            return;
+        });
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
+});
+
+/**
+* Supprimer un tag
+*/
+app.delete("/tags/:tagId([0-9]*)/delete/", [checkUserTokenIsValid, checkUserIsAdmin, checkTagExists, checkTagIsNotProtected], function(request, response) {
+    Tag.findById(request.params.tagId).then(function(tag) {
+        tag.destroy();
+        response.status(200).json({
+            "code": 200,
+            "message": "Le tag a été supprimé avec succès."
+        }).end();
+        return;
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
 });
 
 /**
@@ -500,7 +958,7 @@ app.post("/login", function(request, response) {
         }
     }).then(function(user) {
         // Utilisateur existant ?
-        if (user == null) {
+        if (!user) {
             response.status(500).json({
                 "code": 500,
                 "error": "Cette adresse e-mail ne correspond à aucun compte existant."
@@ -539,7 +997,7 @@ app.post("/login", function(request, response) {
             "uid": user.id,
             "nbf": Math.round(d.getTime() / 1000),
             "iat": Math.round(d.getTime() / 1000),
-            "exp": Math.round((d.getTime() / 1000) + (24 * 60 * 60)), // 1 jour
+            "exp": Math.round((d.getTime() / 1000) + (14 * 24 * 60 * 60)), // 14 jour
             "iss": "/"
         };
         const token = jwt.sign(payload, privateKey);
@@ -563,39 +1021,6 @@ app.post("/login", function(request, response) {
 });
 
 /**
-* Middleware
-* Vérifie la validité du token de connexion envoyé par le client
-*/
-const checkUserTokenIsValid = function(request, response, next) {
-    const token = request.body.token || request.query.token || request.headers["x-access-token"];
-    if (!token) {
-        response.status(500).json({
-            "code": 500,
-            "error": "Le token de connexion est absent."
-        }).end();
-        return;
-    }
-    try {
-        const payload = jwt.verify(token, privateKey);
-        User.findById(payload.uid).then(function(user){
-            next();
-        }).catch(function(error) {
-            response.status(500).json({
-                "code": 500,
-                "error": "Le token de connexion est invalide."
-            }).end();
-            return;
-        });
-    } catch (error) {
-        response.status(500).json({
-            "code": 500,
-            "error": "Le token de connexion est invalide."
-        }).end();
-        return;
-    }
-};
-
-/**
 * Permet l'obtention d'un nouveau token de connexion avant que celui qui est envoyé n'expire
 */
 app.get("/user/revive", checkUserTokenIsValid, function(request, response) {
@@ -607,7 +1032,7 @@ app.get("/user/revive", checkUserTokenIsValid, function(request, response) {
             "uid": user.id,
             "nbf": Math.round(d.getTime() / 1000),
             "iat": Math.round(d.getTime() / 1000),
-            "exp": Math.round((d.getTime() / 1000) + (24 * 60 * 60)), // 1 jour
+            "exp": Math.round((d.getTime() / 1000) + (14 * 24 * 60 * 60)), // 14 jour
             "iss": "/"
         };
         const newToken = jwt.sign(newPayload, privateKey);
@@ -629,6 +1054,10 @@ app.get("/user/revive", checkUserTokenIsValid, function(request, response) {
         return;
     });
 });
+
+/* ============================================================ */
+/*                  LANCEMENT DU SERVEUR                        */
+/* ============================================================ */
 
 /**
 * Lance le serveur

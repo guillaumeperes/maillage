@@ -278,6 +278,47 @@ const checkTagIsNotProtected = function(request, response, next) {
     });
 };
 
+/**
+* Vérifie que l'utilisateur "UserId" existe
+*/
+const checkUserExists = function(request, response, next){
+    User.findById(request.params.userId).then(function(user){
+        if (!user){
+            response.status(404).json({
+                "code": 404,
+                "error": "L'utisateur demandé n'a pas été trouvé."
+            }).end();
+            return;
+        } else {
+            next();
+        }
+    }).catch(function(error) {
+        response.status(404).json({
+            "code": 404,
+            "error": "L'utisateur demandé n'a pas été trouvé."
+        }).end();
+        return;
+    });
+};
+
+
+/**
+* Vérifie que l'utilisateur n'est pas lui même
+*/
+const checkUserIsNotMe = function(request, response, next){
+    const token = request.body.token || request.query.token || request.headers["x-access-token"];
+    const payload = jwt.verify(token, privateKey);
+    if (payload.uid == request.params.userId){
+        response.status(500).json({
+                "code": 500,
+                "error": "Te supprime pas toi même boufon"
+            }).end();
+            return;
+        }
+        next();
+};
+
+
 /* ============================================================ */
 /*                        ROUTES                                */
 /* ============================================================ */
@@ -929,6 +970,7 @@ app.post("/register", function(request, response) {
     });
 });
 
+
 /**
 * Connexion
 */
@@ -1054,6 +1096,25 @@ app.get("/user/revive", checkUserTokenIsValid, function(request, response) {
         return;
     });
 });
+
+app.delete("/users/:userId([0-9]*)/delete",[checkUserTokenIsValid, checkUserIsAdmin, checkUserExists, checkUserIsNotMe], function(request, response){
+        User.findById(request.params.userId).then(function(user) {
+        user.destroy();
+        response.status(200).json({
+            "code": 200,
+            "message": "L'utilisateur a été supprimée avec succès"
+        }).end();
+        return;
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
+});   
+
+
 
 /* ============================================================ */
 /*                  LANCEMENT DU SERVEUR                        */

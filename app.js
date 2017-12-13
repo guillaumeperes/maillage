@@ -329,7 +329,10 @@ const checkUserIsNotMe = function(request, response, next){
 app.get("/categories/alltags/", function(request, response){
     Category.findAll({
         "include": [{
-            "model": Tag
+            "model": Tag,
+            "include": [{
+                "model": Mesh
+            }]
         }],
         "order": [
             ["title", "ASC"],
@@ -721,7 +724,10 @@ app.post("/categories/:categoryId([0-9]*)/edit/", [checkUserTokenIsValid, checkU
     // Mise à jour de la catégorie
     Category.findById(request.params.categoryId, {
         "include": [{
-            "model": Tag
+            "model": Tag,
+            "include": [{
+                "model": Mesh
+            }]
         }]
     }).then(function(category) {
         category.update({
@@ -783,9 +789,11 @@ app.put("/categories/:categoryId([0-9]*)/tags/new/", [checkUserTokenIsValid, che
 
     // Création du nouveau tag
     Tag.create({
-        "categoryId": request.params.categoryId,
+        "categoriesId": request.params.categoryId,
         "title": data.title
     }).then(function(tag) {
+        tag = tag.toJSON();
+        tag.meshes = [];
         response.status(200).json({
             "code": 200,
             "message": "Le tag a été créé avec succès.",
@@ -841,7 +849,11 @@ app.post("/tags/:tagId([0-9]*)/edit/", [checkUserTokenIsValid, checkUserIsAdmin,
     }
 
     // Mise à jour du tag
-    Tag.findById(request.params.tagId).then(function(tag) {
+    Tag.findById(request.params.tagId, {
+        "include": [{
+            "model": Mesh
+        }]
+    }).then(function(tag) {
         tag.update({
             "title": data.title
         }).then(function(tag) {

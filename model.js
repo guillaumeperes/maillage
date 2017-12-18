@@ -2,12 +2,7 @@ const hash = require("hash.js");
 const md5 = require("md5");
 const uniqid = require("uniqid");
 const Sequelize = require("sequelize");
-const sequelize = new Sequelize("maillage", "guillaume", "la pomme est verte", {
-    "host": "localhost",
-    "dialect": "postgres",
-    "port": 5432,
-    "timezone": "Europe/Paris"
-});
+const sequelize = require("./db").sequelize;
 
 // categories
 const Category = sequelize.define("categories", {

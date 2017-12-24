@@ -164,10 +164,6 @@ const Mesh = sequelize.define("meshes", {
         "type": Sequelize.TEXT,
         "allowNull": false
     },
-    "uri": {
-        "type": Sequelize.TEXT,
-        "allowNull": false
-    },
     "filesize": {
         "type": Sequelize.BIGINT,
         "allowNull": false

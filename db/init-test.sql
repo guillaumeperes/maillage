@@ -14,15 +14,15 @@ INSERT INTO users_roles (id, users_id, roles_id) VALUES
 ;
 SELECT pg_catalog.setval('users_roles_id_seq', 2, true);
 
-INSERT INTO meshes (id, users_id, title, vertices, cells, filename, filepath, uri, filesize, filetype) VALUES
-(1, 1, 'B1', 10935, 21870, 'B1.mesh', '/web/maillage_api/public/up/meshes/originals/B1.mesh', '/up/meshes/originals/B1.mesh', 10000, 'mesh'),
-(2, 1, 'C2', 19416, 38832, 'C2.mesh', '/web/maillage_api/public/up/meshes/originals/C2.mesh', '/up/meshes/originals/C2.mesh', 10000, 'mesh'),
-(3, 1, 'C3', 44904, 67465, 'C3.mesh', '/web/maillage_api/public/up/meshes/originals/C3.mesh', '/up/meshes/originals/C3.mesh', 10000, 'mesh'),
-(4, 1, 'ChineseDragon', 2502, 5000, 'Chinese_dragon.off', '/web/maillage_api/public/up/meshes/originals/Chinese_dragon.off', '/up/meshes/originals/Chinese_dragon.off', 10000, 'off'),
-(5, 1, 'fusee', 28727, 132966, 'fusee.mesh', '/web/maillage_api/public/up/meshes/originals/fusee.mesh', '/up/meshes/originals/fusee.mesh', 10000, 'mesh'),
-(6, 1, 'M8', 39116, 197998, 'M8.vtk', '/web/maillage_api/public/up/meshes/originals/M8.vtk', '/up/meshes/originals/M8.vtk', 10000, 'vtk'),
-(7, 1, 'M11', 66606, 344767, 'M11.mesh', '/web/maillage_api/public/up/meshes/originals/M11.mesh', '/up/meshes/originals/M11.mesh', 10000, 'mesh'),
-(8, 1, 'Q1', 44904, 67465, 'Q1.mesh', '/web/maillage_api/public/up/meshes/originals/Q1.mesh', '/up/meshes/originals/Q1.mesh', 10000, 'mesh')
+INSERT INTO meshes (id, users_id, title, vertices, cells, filename, filepath, filesize, filetype) VALUES
+(1, 1, 'B1', 10935, 21870, 'B1.mesh', '/web/maillage_api/public/up/meshes/originals/B1.mesh', 10000, 'mesh'),
+(2, 1, 'C2', 19416, 38832, 'C2.mesh', '/web/maillage_api/public/up/meshes/originals/C2.mesh', 10000, 'mesh'),
+(3, 1, 'C3', 44904, 67465, 'C3.mesh', '/web/maillage_api/public/up/meshes/originals/C3.mesh', 10000, 'mesh'),
+(4, 1, 'ChineseDragon', 2502, 5000, 'Chinese_dragon.off', '/web/maillage_api/public/up/meshes/originals/Chinese_dragon.off', 10000, 'off'),
+(5, 1, 'fusee', 28727, 132966, 'fusee.mesh', '/web/maillage_api/public/up/meshes/originals/fusee.mesh', 10000, 'mesh'),
+(6, 1, 'M8', 39116, 197998, 'M8.vtk', '/web/maillage_api/public/up/meshes/originals/M8.vtk', 10000, 'vtk'),
+(7, 1, 'M11', 66606, 344767, 'M11.mesh', '/web/maillage_api/public/up/meshes/originals/M11.mesh', 10000, 'mesh'),
+(8, 1, 'Q1', 44904, 67465, 'Q1.mesh', '/web/maillage_api/public/up/meshes/originals/Q1.mesh', 10000, 'mesh')
 ;
 SELECT pg_catalog.setval('meshes_id_seq', 8, true);
 

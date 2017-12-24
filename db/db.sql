@@ -55,7 +55,6 @@ CREATE TABLE "meshes" (
 "cells" int8 DEFAULT NULL,
 "filename" text NOT NULL,
 "filepath" text NOT NULL,
-"uri" text NOT NULL,
 "filesize" int8 NOT NULL,
 "filetype" text NOT NULL,
 "created" timestamp(0) NOT NULL DEFAULT now(),

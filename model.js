@@ -194,14 +194,6 @@ const Image = sequelize.define("images", {
         "allowNull": false,
         "field": "meshes_id"
     },
-    "size": {
-        "type": Sequelize.INTEGER, 
-        "allowNull": false
-    },
-    "type": {
-        "type": Sequelize.TEXT,
-        "allowNull": false
-    },
     "path": {
         "type": Sequelize.TEXT,
         "allowNull": false

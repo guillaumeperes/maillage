@@ -104,8 +104,6 @@ WITHOUT OIDS;
 CREATE TABLE "images" (
 "id" serial4 NOT NULL,
 "meshes_id" int4 NOT NULL,
-"size" int8 NOT NULL,
-"type" text NOT NULL,
 "path" text NOT NULL,
 "uri" text NOT NULL,
 "thumb_path" text NOT NULL,

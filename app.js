@@ -3,6 +3,11 @@ const express = require("express");
 const validator = require("email-validator");
 const bodyParser = require("body-parser");
 const jwt = require("jsonwebtoken");
+const multer = require("multer");
+const md5 = require("md5");
+const uniqid = require("uniqid");
+const fs = require("fs");
+const sharp = require("sharp");
 const app = express();
 
 /**
@@ -56,6 +61,42 @@ app.use(bodyParser.json());
 */
 app.use(bodyParser.urlencoded({ extended: true }));
 
+/**
+* Paramétrage du répertoire de destination des fichiers uploadés
+*/
+const uploadStorage = multer.diskStorage({
+    "destination": function(request, file, cb) {
+        cb(null, __dirname + "/tmp");
+    },
+    "filename": function(request, file, cb) {
+        cb(null, md5(uniqid()) + "-" + Date.now());
+    }
+});
+
+/**
+* Paramétrage de l'upload des images
+*/
+const upload = multer({
+    "storage": uploadStorage,
+    "limits": {
+        "fileSize": 104857600
+    }
+});
+
+/* ============================================================ */
+/*                      UTILIRAIRES                             */
+/* ============================================================ */
+
+/**
+* Nettoie les éventuels fichiers uploadés lors d'une requête
+*/
+const cleanUploadedFiles = function(files) {
+    files.forEach(function(file) {
+        fs.unlink(file.path, function(err) {
+            // Do nothing even if an error occured
+        });
+    });
+};
 
 /* ============================================================ */
 /*                      MIDDLEWARES                             */
@@ -67,6 +108,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const checkMeshExists = function(request, response, next) {
     Mesh.findById(request.params.mesh_id).then(function(mesh) {
         if (!mesh) {
+            if (request.files != null) {
+                cleanUploadedFiles(request.files);
+            }
             response.status(404).json({
                 "code": 404,
                 "error": "Le fichier de maillage demandé n'a pas été trouvé."
@@ -76,6 +120,9 @@ const checkMeshExists = function(request, response, next) {
             next();
         }
     }).catch(function(error) {
+        if (request.files != null) {
+            cleanUploadedFiles(request.files);
+        }
         response.status(404).json({
             "code": 404,
             "error": "Le fichier de maillage demandé n'a pas été trouvé."
@@ -90,6 +137,9 @@ const checkMeshExists = function(request, response, next) {
 const checkUserTokenIsValid = function(request, response, next) {
     const token = request.body.token || request.query.token || request.headers["x-access-token"];
     if (!token) {
+        if (request.files != null) {
+            cleanUploadedFiles(request.files);
+        }
         response.status(500).json({
             "code": 500,
             "error": "Le token de connexion est absent."
@@ -100,6 +150,9 @@ const checkUserTokenIsValid = function(request, response, next) {
         const payload = jwt.verify(token, privateKey);
         User.findById(payload.uid).then(function(user){
             if (!user) {
+                if (request.files != null) {
+                    cleanUploadedFiles(request.files);
+                }
                 response.status(500).json({
                     "code": 500,
                     "error": "Le token de connexion est invalide."
@@ -109,6 +162,9 @@ const checkUserTokenIsValid = function(request, response, next) {
                 next();
             }
         }).catch(function(error) {
+            if (request.files != null) {
+                cleanUploadedFiles(request.files);
+            }
             response.status(500).json({
                 "code": 500,
                 "error": "Le token de connexion est invalide."
@@ -116,6 +172,9 @@ const checkUserTokenIsValid = function(request, response, next) {
             return;
         });
     } catch (error) {
+        if (request.files != null) {
+            cleanUploadedFiles(request.files);
+        }
         response.status(500).json({
             "code": 500,
             "error": "Le token de connexion est invalide."
@@ -139,6 +198,9 @@ const checkUserIsAdmin = function(request, response, next) {
             return role.name == "administrator";
         });
         if (!role) {
+            if (request.files != null) {
+                cleanUploadedFiles(request.files);
+            }
             response.status(403).json({
                 "code": 403, 
                 "error": "Vous n'avez pas les permissions suffisantes pour accéder à cette page"
@@ -148,6 +210,9 @@ const checkUserIsAdmin = function(request, response, next) {
             next();
         }
     }).catch(function(error) {
+        if (request.files != null) {
+            cleanUploadedFiles(request.files);
+        }
         response.status(500).json({
             "code": 500,
             "error": "Une erreur s'est produite."
@@ -171,6 +236,9 @@ const checkUserIsContributor = function(request, response, next) {
             return role.name == "contributor";
         });
         if (!role) {
+            if (request.files != null) {
+                cleanUploadedFiles(request.files);
+            }
             response.status(403).json({
                 "code": 403, 
                 "error": "Vous n'avez pas les permissions suffisantes pour accéder à cette page"
@@ -180,6 +248,9 @@ const checkUserIsContributor = function(request, response, next) {
             next();
         }
     }).catch(function(error) {
+        if (request.files != null) {
+            cleanUploadedFiles(request.files);
+        }
         response.status(500).json({
             "code": 500,
             "error": "Une erreur s'est produite."
@@ -571,8 +642,189 @@ app.get("/meshes/search/", function(request, response) {
 /**
 * Crée un nouveau fichier de maillage dans la base de données
 */
-app.put("/mesh/new/", function(request, response) {
-    // TODO
+app.put("/mesh/new/", [checkUserTokenIsValid, checkUserIsContributor, upload.any()], function(request, response) {
+    const token = request.body.token || request.query.token || request.headers["x-access-token"];
+    const payload = jwt.verify(token, privateKey);
+    User.findById(payload.uid).then(function(user) {
+        const data = request.body;
+
+        // Vérification des données requises
+
+        if (data.title == null || !data.title.length) {
+            cleanUploadedFiles(request.files);
+            response.status(500).json({
+                "code": 500,
+                "error": "Merci de renseigner un titre valide."
+            }).end();
+            return;
+        }
+        if (data.vertices == null || !data.vertices.length || /^(0|[1-9]\d*)$/.test(data.vertices) === false) {
+            cleanUploadedFiles(request.files);
+            response.status(500).json({
+                "code": 500,
+                "error": "Merci de renseigner un nombre de sommets valide."
+            }).end();
+            return;
+        }
+        if (data.cells == null || !data.cells.length || /^(0|[1-9]\d*)$/.test(data.cells) === false) {
+            cleanUploadedFiles(request.files);
+            response.status(500).json({
+                "code": 500,
+                "error": "Merci de renseigner un nombre de cellules valide."
+            }).end();
+            return;
+        }
+        const meshfile = request.files.find(function(file) {
+            return file.fieldname == "newMesh";
+        });
+        if (meshfile == null) {
+            cleanUploadedFiles(request.files);
+            response.status(500).json({
+                "code": 500,
+                "error": "Merci de renseigner un fichier de maillage."
+            }).end();
+            return;
+        }
+
+        let createdMesh = null; // Mesh nouvellement créé
+        
+        // Traitement des données
+
+        const extension = meshfile.originalname.split(".").pop();
+        const newPath = __dirname + "/meshes/" + md5(uniqid()) + "." + extension;
+        fs.rename(meshfile.path, newPath, function(error) {
+            if (error) {
+                cleanUploadedFiles(request.files);
+                response.status(500).json({
+                    "code": 500,
+                    "error": "Merci de renseigner un fichier de maillage."
+                }).end();
+                return;
+            }
+            let content = {
+                "usersId": user.id,
+                "title": data.title,
+                "vertices": data.vertices,
+                "cells": data.cells,
+                "filename": meshfile.originalname,
+                "filepath": newPath,
+                "filesize": meshfile.size,
+                "filetype": extension,
+                "description": (data.description != null && data.description.length > 0) ? data.description : null 
+            };
+
+            let createdFiles = []; // liste des fichiers créés (pour un éventuel nettoyage)
+            sequelize.transaction(function(t) {
+                return Mesh.create(content, {"transaction": t}).then(function(mesh) {
+                    createdMesh = mesh; // Sauvegarde du mesh créé
+
+                    // Images
+                    const authorizedMimetypes = ["image/jpeg", "image/gif", "image/png"];
+                    const promises = request.files.map(function(file, i) {
+                        if (file.fieldname == "newImage" && authorizedMimetypes.indexOf(file.mimetype) != -1) {
+                            let promises = [];
+
+                            // Miniature
+                            const thumbname = md5(uniqid()) + ".jpg";
+                            const thumbpath = __dirname + "/public/up/img/" + thumbname;
+                            createdFiles.push(thumbpath);
+                            const thumb = sharp(file.path);
+                            thumb.resize(90, 90);
+                            thumb.crop(sharp.gravity.center);
+                            thumb.toColorspace("srgb");
+                            thumb.jpeg({"quality": 90});
+                            promises.push(thumb.toFile(thumbpath));
+
+                            // Grand format
+                            const name = md5(uniqid()) + ".jpg";
+                            const path = __dirname + "/public/up/img/" + name;
+                            createdFiles.push(path);
+                            const img = sharp(file.path);
+                            img.resize(500, 500);
+                            img.crop(sharp.gravity.center);
+                            img.toColorspace("srgb");
+                            img.jpeg({"quality": 90});
+                            promises.push(img.toFile(path));
+
+                            return Promise.all(promises).then(function() {
+                                return Image.create({
+                                    "meshesId": mesh.id,
+                                    "type": "image/jpeg",
+                                    "path": path,
+                                    "uri": "/up/img/" + name,
+                                    "thumbPath": thumbpath,
+                                    "thumbUri": "/up/img/" + thumbname,
+                                    "isDefault": i == 0 ? true : false
+                                }, 
+                                {"transaction": t}).then(function() {
+                                    // Tags
+                                    if (request.body.tags != null) {
+                                        const tags = request.body.tags.split(",");
+                                        const promises = tags.map(function(tag) {
+                                            return MeshTag.create({
+                                                "tagsId": tag,
+                                                "meshesId": mesh.id
+                                            }, {"transaction": t});
+                                        });
+                                        return Promise.all(promises);
+                                    }
+                                });
+                            });
+                        }
+                    });
+                    return Promise.all(promises);
+                });
+            }).then(function(result) {
+                cleanUploadedFiles(request.files);
+                Mesh.findById(createdMesh.id, {
+                    "include": [{
+                        "model": Tag,
+                    }, {
+                        "model": Image,
+                        "where": {
+                            "isDefault": true
+                        }
+                    }],
+                    "order": [
+                        ["id", "ASC"],
+                        [Tag, "title", "ASC"],
+                        [Tag, "id", "ASC"]
+                    ]
+                }).then(function(mesh) {
+                    response.status(200).json({
+                        "code": 200,
+                        "message": "Le fichier de maillage a été ajouté avec succès",
+                        "data": {
+                            "mesh": mesh
+                        }
+                    }).end();
+                    return;
+                });
+            }).catch(function(error) {
+                cleanUploadedFiles(request.files);
+                fs.unlink(newPath, function() {
+                    // Do nothing
+                });
+                createdFiles.forEach(function(createdFile) {
+                    fs.unlink(createdFile, function() {
+                        // Do nothing
+                    });
+                });
+                response.status(500).json({
+                    "code": 500,
+                    "error": "Une erreur s'est produite."
+                }).end();
+                return;
+            });
+        });
+    }).catch(function(error) {
+        cleanUploadedFiles(request.files);
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
 });
 
 /**

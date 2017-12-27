@@ -1301,7 +1301,7 @@ app.post("/login", function(request, response) {
         const d = new Date();
         const payload = {
             "uid": user.id,
-            "nbf": Math.round(d.getTime() / 1000),
+            "nbf": Math.round(d.getTime() / 1000) - 10,
             "iat": Math.round(d.getTime() / 1000),
             "exp": Math.round((d.getTime() / 1000) + (14 * 24 * 60 * 60)), // 14 jour
             "iss": "/"

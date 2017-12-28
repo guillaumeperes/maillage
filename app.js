@@ -877,6 +877,31 @@ app.delete("/mesh/:mesh_id/delete/", checkMeshExists, function(request, response
 });
 
 /**
+* Télécharge le fichier associé au message "mesh_id".
+*/
+app.get("/mesh/:mesh_id([0-9]*)/download/", checkMeshExists, function(request, response) {
+    Mesh.findById(request.params.mesh_id).then(function(mesh) {
+        fs.access(mesh.filepath, fs.constants.R_OK, function(err) {
+            if (err) {
+                response.status(500).json({
+                    "code": 500,
+                    "error": "Une erreur s'est produite."
+                }).end();
+            } else {
+                response.status(200).download(mesh.filepath, mesh.filename);
+            }
+            return;
+        });
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
+});
+
+/**
 * Créer une nouvelle catégorie
 */
 app.put("/categories/new/", [checkUserTokenIsValid, checkUserIsAdmin], function(request, response) {

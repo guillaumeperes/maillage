@@ -1404,6 +1404,33 @@ app.delete("/users/:userId([0-9]*)/delete",[checkUserTokenIsValid, checkUserIsAd
 });   
 
 
+/**
+* Liste les rôles de l'utilisateur identifié par le token de connexion
+*/
+app.get("/user/roles/", [checkUserTokenIsValid], function(request, response) {
+    const token = request.body.token || request.query.token || request.headers["x-access-token"];
+    const payload = jwt.verify(token, privateKey);
+    User.findById(payload.uid, {
+        "include": [{
+            "model": Role
+        }]
+    }).then(function(user) {
+        const roles = user.roles.map(function(role) {
+            return {
+                "id": role.id,
+                "name": role.name,
+                "title": role.title
+            };
+        });
+        response.status(200).json(roles).end();
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
+});
 
 /* ============================================================ */
 /*                  LANCEMENT DU SERVEUR                        */

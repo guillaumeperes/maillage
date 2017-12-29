@@ -381,12 +381,13 @@ const checkUserIsNotMe = function(request, response, next){
     const payload = jwt.verify(token, privateKey);
     if (payload.uid == request.params.userId){
         response.status(500).json({
-                "code": 500,
-                "error": "Te supprime pas toi même boufon"
-            }).end();
-            return;
-        }
+            "code": 500,
+            "error": "Il est impossible de supprimer son propre compte."
+        }).end();
+        return;
+    } else {
         next();
+    }
 };
 
 
@@ -830,7 +831,7 @@ app.put("/mesh/new/", [checkUserTokenIsValid, checkUserIsContributor, upload.any
 /**
 * Récupère les données d'un fichier de maillage
 */
-app.get("/mesh/:mesh_id/view/", checkMeshExists, function(request, response) {
+app.get("/mesh/:mesh_id([0-9]*)/view/", checkMeshExists, function(request, response) {
     Mesh.findById(request.params.mesh_id, {
         "include": [{
             "model": Tag
@@ -865,14 +866,14 @@ app.get("/mesh/:mesh_id/view/", checkMeshExists, function(request, response) {
 /**
 * Met à jour les données d'un fichier de maillage
 */
-app.post("/mesh/:mesh_id/edit/", checkMeshExists, function(request, response) {
+app.post("/mesh/:mesh_id([0-9]*)/edit/", [checkUserTokenIsValid, checkUserIsContributor, checkMeshExists], function(request, response) {
     // TODO
 });
 
 /**
 * Supprime un fichier de maillage
 */
-app.delete("/mesh/:mesh_id/delete/", checkMeshExists, function(request, response) {
+app.delete("/mesh/:mesh_id([0-9]*)/delete/", [checkUserTokenIsValid, checkUserIsContributor, checkMeshExists], function(request, response) {
     // TODO
 });
 
@@ -1395,6 +1396,9 @@ app.get("/user/revive", checkUserTokenIsValid, function(request, response) {
     });
 });
 
+/**
+* Efface un utilisateur de la base de données
+*/
 app.delete("/users/:userId([0-9]*)/delete",[checkUserTokenIsValid, checkUserIsAdmin, checkUserExists, checkUserIsNotMe], function(request, response){
         User.findById(request.params.userId).then(function(user) {
         user.destroy();
@@ -1410,8 +1414,7 @@ app.delete("/users/:userId([0-9]*)/delete",[checkUserTokenIsValid, checkUserIsAd
         }).end();
         return;
     });
-});   
-
+});
 
 /**
 * Liste les rôles de l'utilisateur identifié par le token de connexion

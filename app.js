@@ -874,7 +874,45 @@ app.post("/mesh/:mesh_id([0-9]*)/edit/", [checkUserTokenIsValid, checkUserIsCont
 * Supprime un fichier de maillage
 */
 app.delete("/mesh/:mesh_id([0-9]*)/delete/", [checkUserTokenIsValid, checkUserIsContributor, checkMeshExists], function(request, response) {
-    // TODO
+    Mesh.findById(request.params.mesh_id, {
+        "include": [{
+            "model": Image
+        }]
+    }).then(function(mesh) {
+        let promises = [];
+        promises.push(fs.unlink(mesh.filepath, function(err) { /* Do nothing */ }));
+        mesh.images.forEach(function(image) {
+            promises.push(fs.unlink(image.path, function(err) { /* Do nothing */ }));
+            promises.push(fs.unlink(image.thumbPath, function(err) { /* Do nothing */ }));
+        });
+        Promise.all(promises).then(function() {
+            mesh.destroy().then(function() {
+                response.status(200).json({
+                    "code": 200,
+                    "error": "Le fichier de maillage a été effacé avec succès."
+                }).end();
+                return;
+            }).catch(function() {
+                response.status(500).json({
+                    "code": 500,
+                    "error": "Une erreur s'est produite."
+                }).end();
+                return;
+            });
+        }).catch(function() {
+            response.status(500).json({
+                "code": 500,
+                "error": "Une erreur s'est produite."
+            }).end();
+            return;
+        });
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
 });
 
 /**

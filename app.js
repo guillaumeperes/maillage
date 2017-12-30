@@ -605,10 +605,11 @@ app.get("/meshes/search/", function(request, response) {
             return filter > 0;
         });
     }
-
-    let wheres = {};
+    const page = parseInt(request.query.page, 10) || 1;
+    const pageSize = parseInt(request.query.pageSize, 10) || 20;
 
     // Recherche à facettes
+    let wheres = {};
     if (typeof filters === "object" && filters.length > 0) {
         const filtersBaseQuery = "(SELECT DISTINCT meshes.id FROM meshes INNER JOIN meshes_tags ON meshes.id = meshes_tags.meshes_id WHERE meshes_tags.tags_id = ?)";
         const filtersQueryArr = filters.map(function(filter) {
@@ -620,10 +621,25 @@ app.get("/meshes/search/", function(request, response) {
         };
     }
 
-    Mesh.findAll({
+    let res = {};
+    let promises = [];
+    
+    // Nombre de résultats
+    promises[0] = Mesh.count({
         "where": wheres,
+    }).then(function(count) {
+        res.count = count;
+    });
+    // Données
+    promises[1] = Mesh.findAll({
+        "where": wheres,
+        "offset": (page - 1) * pageSize,
+        "limit": pageSize,
         "include": [{
             "model": Tag,
+            "include": [{
+                "model": Category
+            }]
         }, {
             "model": Image,
             "where": {
@@ -636,7 +652,18 @@ app.get("/meshes/search/", function(request, response) {
             [Tag, "id", "ASC"]
         ]
     }).then(function(meshes) {
-        response.json(meshes);
+        res.results = meshes;
+    });
+
+    Promise.all(promises).then(function() {
+        response.status(200).json(res).end();
+        return;
+    }).catch(function() {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
     });
 });
 

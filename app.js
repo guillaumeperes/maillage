@@ -533,64 +533,66 @@ app.get("/users/list/", function(request, response){
 /**
 * Liste des options de tri des fichiers de maillage supportés par l'application
 */
-app.set("meshesSorts", [
-    {
-        "name": "title",
+
+app.set("meshesSorts", {
+    "title": {
         "label": "Ordre alphabétique",
         "column": "title",
         "reverse": false,
         "default": true
-    }, {
-        "name": "title-reverse",
+    },
+    "title-reverse": {
         "label": "Ordre alphabétique inverse",
         "column": "title",
         "reverse": true
-    }, {
-        "name": "cells",
+    },
+    "cells": {
         "label": "Nombre de cellules : croissant",
         "column": "cells",
         "reverse": false
-    }, {
-        "name": "cells-reverse",
+    },
+    "cells-reverse": {
         "label": "Nombre de cellules : décroissant",
         "column": "cells",
         "reverse": true
-    }, {
-        "name": "vertices",
+    },
+    "vertices": {
         "label": "Nombre de sommets : croissant",
         "column": "vertices",
         "reverse": false
-    }, {
-        "name": "vertices-reverse",
+    },
+    "vertices-reverse": {
         "label": "Nombre de sommets : décroissant",
         "column": "vertices",
         "reverse": true
-    }, {
-        "name": "created",
+    },
+    "created": {
         "label": "Du plus ancien au plus récent",
         "column": "created",
         "reverse": false
-    }, {
-        "name": "created-reverse",
+    },
+    "created-reverse": {
         "label": "Du plus récent au plus ancien",
         "column": "created",
         "reverse": true
     }
-]);
+});
 
 /**
 * Options disponibles pour trier les fichiers de maillage
 */
 app.get("/meshes/sorts/", function(request, response) {
     const sorts = app.get("meshesSorts");
-    const out = sorts.map(function(sort) {
+    const keys = Object.keys(sorts);
+    const out = keys.map(function(key) {
         return {
-            "name": sort.name,
-            "label": sort.label,
-            "default": sort.default ? true : false
+            "name": key,
+            "label": sorts[key].label,
+            "default": sorts[key].default ? true : false
         };
     });
-    response.json(out);
+    response.status(200).json(out).end();
+    return;
 });
 
 /**
@@ -607,7 +609,10 @@ app.get("/meshes/search/", function(request, response) {
     }
     const page = parseInt(request.query.page, 10) || 1;
     const pageSize = parseInt(request.query.pageSize, 10) || 20;
-    const selectedSort = request.query.sort || "title";
+    let selectedSort = request.query.sort || "title";
+    if (app.get("meshesSorts")[selectedSort] == null) {
+        selectedSort = "title";
+    }
 
     // Recherche à facettes
     let wheres = {};
@@ -623,9 +628,7 @@ app.get("/meshes/search/", function(request, response) {
     }
 
     // Order by
-    const sort = app.get("meshesSorts").find(function(s) {
-        return s.name == selectedSort;
-    });
+    const sort = app.get("meshesSorts")[selectedSort];
     const orderColumn = sort.column;
     const orderDirection = sort.reverse ? "DESC" : "ASC";
 

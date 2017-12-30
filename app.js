@@ -607,6 +607,7 @@ app.get("/meshes/search/", function(request, response) {
     }
     const page = parseInt(request.query.page, 10) || 1;
     const pageSize = parseInt(request.query.pageSize, 10) || 20;
+    const selectedSort = request.query.sort || "title";
 
     // Recherche à facettes
     let wheres = {};
@@ -620,6 +621,13 @@ app.get("/meshes/search/", function(request, response) {
             $in: sequelize.literal("(" + filtersQuery + ")")
         };
     }
+
+    // Order by
+    const sort = app.get("meshesSorts").find(function(s) {
+        return s.name == selectedSort;
+    });
+    const orderColumn = sort.column;
+    const orderDirection = sort.reverse ? "DESC" : "ASC";
 
     let res = {};
     let promises = [];
@@ -647,6 +655,7 @@ app.get("/meshes/search/", function(request, response) {
             }
         }],
         "order": [
+            [orderColumn, orderDirection],
             ["id", "ASC"],
             [Tag, "title", "ASC"],
             [Tag, "id", "ASC"]

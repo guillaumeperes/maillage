@@ -3,6 +3,8 @@
 -- Création du schéma --
 ------------------------
 
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
 CREATE TABLE "users" (
 "id" serial4 NOT NULL,
 "email" text NOT NULL,

@@ -8,6 +8,7 @@ const md5 = require("md5");
 const uniqid = require("uniqid");
 const fs = require("fs");
 const sharp = require("sharp");
+const normalize = require("normalize-strings");
 const app = express();
 
 /**
@@ -599,35 +600,50 @@ app.get("/meshes/sorts/", function(request, response) {
 * Recherche de fichiers de maillage
 */
 app.get("/meshes/search/", function(request, response) {
+    const page = parseInt(request.query.page, 10) || 1;
+    const pageSize = parseInt(request.query.pageSize, 10) || 20;
+    let wheres = {};
+
+    // Recherche à facettes
+
     if (typeof request.query.filters === "object" && request.query.filters.length > 0) {
-        var filters = request.query.filters.map(function(filter) {
+        let filters = request.query.filters.map(function(filter) {
             return parseInt(filter, 10) || 0;
         });
         filters = filters.filter(function(filter) {
             return filter > 0;
         });
+        if (filters.length > 0) {
+            const filtersBaseQuery = "(SELECT DISTINCT meshes.id FROM meshes INNER JOIN meshes_tags ON meshes.id = meshes_tags.meshes_id WHERE meshes_tags.tags_id = ?)";
+            const filtersQueryArr = filters.map(function(filter) {
+                return filtersBaseQuery.replace("?", filter);
+            });
+            const filtersQuery = filtersQueryArr.join(" INTERSECT ");
+            wheres.id = {
+                $in: sequelize.literal("(" + filtersQuery + ")")
+            };
+        }
     }
-    const page = parseInt(request.query.page, 10) || 1;
-    const pageSize = parseInt(request.query.pageSize, 10) || 20;
+
+    // Recherche fulltext
+
+    if (request.query.keyword != null && request.query.keyword.length > 0) {
+        const keywords = normalize(request.query.keyword).replace(/[^a-z0-9\s]/i, " ").replace(/\s+/, " ").toLowerCase().trim().split(" ");
+        let ors = [];
+        keywords.forEach(function(keyword) {
+            ors.push(sequelize.literal("trim(regexp_replace(regexp_replace(unaccent(lower(title)), '[^a-z0-9\\s]', ' ', 'g'), '\\s+', ' ', 'g')) LIKE '%" + keyword + "%'"));
+            ors.push(sequelize.literal("trim(regexp_replace(regexp_replace(unaccent(lower(description)), '[^a-z0-9\\s]', ' ', 'g'), '\\s+', ' ', 'g')) LIKE '%" + keyword + "%'"));
+        });
+        wheres = Object.assign({}, wheres, {
+            $or: ors
+        });
+    }
+
+    // Order by
     let selectedSort = request.query.sort || "title";
     if (app.get("meshesSorts")[selectedSort] == null) {
         selectedSort = "title";
     }
-
-    // Recherche à facettes
-    let wheres = {};
-    if (typeof filters === "object" && filters.length > 0) {
-        const filtersBaseQuery = "(SELECT DISTINCT meshes.id FROM meshes INNER JOIN meshes_tags ON meshes.id = meshes_tags.meshes_id WHERE meshes_tags.tags_id = ?)";
-        const filtersQueryArr = filters.map(function(filter) {
-            return filtersBaseQuery.replace("?", filter);
-        });
-        const filtersQuery = filtersQueryArr.join(" INTERSECT ");
-        wheres.id = {
-            $in: sequelize.literal("(" + filtersQuery + ")")
-        };
-    }
-
-    // Order by
     const sort = app.get("meshesSorts")[selectedSort];
     const orderColumn = sort.column;
     const orderDirection = sort.reverse ? "DESC" : "ASC";

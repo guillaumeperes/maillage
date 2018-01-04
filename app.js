@@ -437,7 +437,7 @@ app.get("/categories/list/", function(request, response) {
 
         // Recherche fulltext
         if (keyword != null && keyword.length > 0) {
-            const keywords = normalize(request.query.keyword).replace(/[^a-z0-9\s]/i, " ").replace(/\s+/, " ").toLowerCase().trim().split(" ");
+            const keywords = normalize(keyword).replace(/[^a-z0-9\s]/i, " ").replace(/\s+/, " ").toLowerCase().trim().split(" ");
             let ors = [];
             keywords.forEach(function(keyword) {
                 ors.push("trim(regexp_replace(regexp_replace(unaccent(lower(meshes.title)), '[^a-z0-9\\s]', ' ', 'g'), '\\s+', ' ', 'g')) LIKE " + sequelize.escape("%" + keyword + "%"));
@@ -644,8 +644,8 @@ app.get("/meshes/search/", function(request, response) {
         const keywords = normalize(request.query.keyword).replace(/[^a-z0-9\s]/i, " ").replace(/\s+/, " ").toLowerCase().trim().split(" ");
         let ors = [];
         keywords.forEach(function(keyword) {
-            ors.push(sequelize.literal("trim(regexp_replace(regexp_replace(unaccent(lower(title)), '[^a-z0-9\\s]', ' ', 'g'), '\\s+', ' ', 'g')) LIKE '%" + keyword + "%'"));
-            ors.push(sequelize.literal("trim(regexp_replace(regexp_replace(unaccent(lower(description)), '[^a-z0-9\\s]', ' ', 'g'), '\\s+', ' ', 'g')) LIKE '%" + keyword + "%'"));
+            ors.push(sequelize.literal("trim(regexp_replace(regexp_replace(unaccent(lower(meshes.title)), '[^a-z0-9\\s]', ' ', 'g'), '\\s+', ' ', 'g')) LIKE " + sequelize.escape("%" + keyword + "%")));
+            ors.push(sequelize.literal("trim(regexp_replace(regexp_replace(unaccent(lower(meshes.description)), '[^a-z0-9\\s]', ' ', 'g'), '\\s+', ' ', 'g')) LIKE " + sequelize.escape("%" + keyword + "%")));
         });
         wheres = Object.assign({}, wheres, {
             $or: ors

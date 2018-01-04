@@ -422,93 +422,106 @@ app.get("/categories/alltags/", function(request, response){
 * Liste les catégories disponibles avec leurs tags associés
 */
 app.get("/categories/list/", function(request, response) {
+    const buildSubquery = function(filters, keyword, isForCountingMeshes) {
+        let wheres = [];
+
+        // Recherche à facettes
+        if (filters != null && filters.length > 0) {
+            const filtersBaseQuery = "(SELECT DISTINCT meshes.id FROM meshes INNER JOIN meshes_tags ON meshes.id = meshes_tags.meshes_id WHERE meshes_tags.tags_id = ?)";
+            const filtersQueryArr = filters.map(function(filter) {
+                return filtersBaseQuery.replace("?", filter);
+            });
+            const filtersQuery = filtersQueryArr.join(" INTERSECT ");
+            wheres.push("meshes.id IN (" + filtersQuery + ")");
+        }
+
+        // Recherche fulltext
+        if (keyword != null && keyword.length > 0) {
+            const keywords = normalize(request.query.keyword).replace(/[^a-z0-9\s]/i, " ").replace(/\s+/, " ").toLowerCase().trim().split(" ");
+            let ors = [];
+            keywords.forEach(function(keyword) {
+                ors.push("trim(regexp_replace(regexp_replace(unaccent(lower(meshes.title)), '[^a-z0-9\\s]', ' ', 'g'), '\\s+', ' ', 'g')) LIKE " + sequelize.escape("%" + keyword + "%"));
+                ors.push("trim(regexp_replace(regexp_replace(unaccent(lower(meshes.description)), '[^a-z0-9\\s]', ' ', 'g'), '\\s+', ' ', 'g')) LIKE " + sequelize.escape("%" + keyword + "%"));
+            });
+            wheres.push("(" + ors.join(" OR ") + ")");
+        }
+
+        // Construction de la sous-requête
+        let subquery = "SELECT DISTINCT meshes.id FROM meshes";
+        if (wheres.length > 0) {
+            subquery += " WHERE " + wheres.join(" AND ");
+        }
+        return isForCountingMeshes ? subquery : "SELECT DISTINCT tags_id FROM meshes_tags WHERE meshes_id IN (" + subquery + ")";
+    };
+
+    let filters = [];
     if (typeof request.query.filters === "object" && request.query.filters.length > 0) {
-        var filters = request.query.filters.map(function(filter) {
+        filters = request.query.filters.map(function(filter) {
             return parseInt(filter, 10) || 0;
         });
         filters = filters.filter(function(filter) {
             return filter > 0;
         });
     }
-
-    let wheres = {};
-
-    // Recherche à facettes
-    if (typeof filters === "object" && filters.length > 0) {
-        const filtersBaseQuery = "(SELECT DISTINCT meshes.id FROM meshes INNER JOIN meshes_tags ON meshes.id = meshes_tags.meshes_id WHERE meshes_tags.tags_id = ?)";
-        const filtersQueryArr = filters.map(function(filter) {
-            return filtersBaseQuery.replace("?", filter);
-        });
-        const filtersQuery = filtersQueryArr.join(" INTERSECT ");
-        wheres.id = {
-            $in: sequelize.literal("(" + filtersQuery + ")")
-        };
+    let keyword = null;
+    if (request.query.keyword != null && request.query.keyword.length > 0) {
+        keyword = request.query.keyword;
     }
 
-    Mesh.findAll({
-        "where": wheres,
+    Category.findAll({
         "include": [{
             "model": Tag,
-            "include": [{
-                "model": Category
-            }]
-        }]
-    }).then(function(meshes) {
-        // On récupère les tags des contenus qu'on a récupérés
-        let tagsIds = [];
-        meshes.forEach(function(mesh) {
-            mesh.tags.forEach(function(tag) {
-                if (tagsIds.indexOf(tag.id) === -1) {
-                    tagsIds.push(tag.id);
+            "where": {
+                "id": {
+                    $in: sequelize.literal("(" + buildSubquery(filters, keyword, false) + ")")
                 }
+            }
+        }],
+        "order": [
+            ["title", "ASC"],
+            ["id", "ASC"],
+            [Tag, "title", "ASC"],
+            [Tag, "id", "ASC"]
+        ]
+    }).then(function(categories) {
+        let out = {};
+        categories.forEach(function(category) {
+            out[category.id] = {};
+        });
+        const promises = categories.map(function(category) {
+            let tags = {};
+            category.tags.forEach(function(tag) {
+                tags[tag.id] = {};
+            });
+            const promises = category.tags.map(function(tag) {
+                const nextFilters = [].concat(filters, [tag.id]);
+                return sequelize.query("SELECT COUNT(DISTINCT meshes.id) AS count FROM meshes WHERE meshes.id IN (" + buildSubquery(nextFilters, keyword, true) + ")", {type: sequelize.QueryTypes.SELECT}).then(function(result) {
+                    tag = tag.toJSON();
+                    tag.occurences = result[0].count;
+                    tags[tag.id] = tag;
+                });
+            });
+            return Promise.all(promises).then(function() {
+                category = category.toJSON();
+                category.tags = Object.keys(tags).map(function(key) {
+                    return tags[key];
+                });
+                out[category.id] = category;
             });
         });
-        // On recherche ensuite dans la db les tags qui correspondent à nos facettes
-        Category.findAll({
-            "include": [{
-                "model": Tag,
-                "where": Sequelize.or({"id": tagsIds}),
-                "include": {
-                    "model": Mesh
-                }
-            }],
-            "order": [
-                ["title", "ASC"],
-                ["id", "ASC"],
-                [Tag, "title", "ASC"],
-                [Tag, "id", "ASC"]
-            ]
-        }).then(function(categories) {
-            const out = categories.map(function(category) {
-                let tags = category.tags.map(function(tag) {
-                    if (typeof filters === "object" && filters.length > 0) {
-                        // On calcule le nombre de contenus que ce prochain filtre nous permettra d'avoir
-                        let json = tag.toJSON();
-                        const nextMeshes = meshes.filter(function(mesh) {
-                            const index = mesh.tags.findIndex(function(meshTag) {
-                                return meshTag.id === tag.id;
-                            });
-                            return index !== -1;
-                        });
-                        json.occurences = nextMeshes.length;
-                        return json;
-                    } else {
-                        // Pas de filtres sélectionnés
-                        let json = tag.toJSON();
-                        json.occurences = tag.meshes.length;
-                        return json;
-                    }
-                });
-                let json = category.toJSON();
-                json.tags = tags;
-                return json;
+        Promise.all(promises).then(function() {
+            out = Object.keys(out).map(function(key) {
+                return out[key];
             });
-            response.json(out);
+            response.status(200).json(out).end();
+            return;
         }).catch(function(error) {
-            response.json([]);
+            response.status(500).json([]).end();
+            return;
         });
     }).catch(function(error) {
-        response.json([]);
+        response.status(500).json([]).end();
+        return;
     });
 });
 

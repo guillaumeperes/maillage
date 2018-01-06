@@ -1298,35 +1298,35 @@ app.post("/register", function(request, response) {
     if (data.email == null || !data.email.length || !validator.validate(data.email)) {
         response.status(500).json({
             "code": 500,
-            "error": "Merci de renseigner une adresse e-mail valide."
+            "error": "L'adresse e-mail n'est pas renseignée ou n'est pas valide."
         }).end();
         return;
     }
     if (data.password == null || !data.password.length) {
         response.status(500).json({
             "code": 500,
-            "error": "Merci de renseigner votre mot de passe."
+            "error": "Le mot de passe n'est pas renseigné."
         }).end();
         return;
     }
     if (data.password.length < 5) {
         response.status(500).json({
             "code": 500,
-            "error": "Votre mot de passe doit comporter au moins 5 caractères."
+            "error": "Le mot de passe fait moins de 5 caractères."
         }).end();
         return;
     }
     if (data.password2 == null || !data.password2.length) {
         response.status(500).json({
             "code": 500,
-            "error": "Merci de confirmer votre mot de passe."
+            "error": "La confirmation du mot de passe est absente."
         }).end();
         return;
     }
     if (data.password !== data.password2) {
         response.status(500).json({
             "code": 500,
-            "error": "Votre mot de passe et sa confirmation doivent être identiques."
+            "error": "Le mot de passe et sa confirmation ne sont pas identiques."
         }).end();
         return;
     }
@@ -1334,47 +1334,46 @@ app.post("/register", function(request, response) {
     // On vérifie qu'il n'y a pas déjà un user avec l'adresse e-mail renseignée
     User.count({
         "where": {
-            "email": data.email
+            "email": data.email.toLowerCase()
         }
     }).then(function(count) {
         if (count > 0) {
             // Il y a déjà un utilisateur avec l'adresse e-mail renseignée
             response.status(500).json({
                 "code": 500,
-                "error": "Cette adresse e-mail est déjà associée à un compte existant."
+                "error": "Cette adresse e-mail est déjà associée à un compte."
             }).end();
             return;
         } else {
             // Nouvelle adresse e-mail, on insère le nouvel utilisateur dans la base de données
             const salt = User.generateSalt();
             let o = {
-                "email": data.email.toLocaleLowerCase().trim(),
+                "email": data.email.toLowerCase(),
                 "salt": salt,
                 "password": User.encryptPassword(data.password, salt)
             };
             if (data.firstname != null && data.firstname.length) {
-                o.firstname = data.firstname.trim();
+                o.firstname = data.firstname;
             }
             if (data.lastname != null && data.lastname.length) {
-                o.lastname = data.lastname.toLocaleUpperCase().trim();
+                o.lastname = data.lastname.toLocaleUpperCase();
             }
             User.create(o).then(function() {
                 response.status(200).json({
                     "code": 200,
-                    "message": "Votre compte utilisateur a bien été créé."
+                    "message": "Le compte utilisateur a bien été créé."
                 }).end();
                 return;
             }).catch(function() {
                 response.status(500).json({
                     "code": 500,
-                    "error": "Une erreur s'est produite. Merci de réessayer l'opération."
+                    "error": "Une erreur s'est produite."
                 }).end();
                 return;
             });
         }
     });
 });
-
 
 /**
 * Connexion
@@ -1386,14 +1385,14 @@ app.post("/login", function(request, response) {
     if (data.email == null || !data.email.length || !validator.validate(data.email)) {
         response.status(500).json({
             "code": 500,
-            "error": "Merci de renseigner une adresse e-mail valide."
+            "error": "L'adresse e-mail n'est pas renseignée ou n'est pas valide."
         }).end();
         return;
     }
     if (data.password == null || !data.password.length) {
         response.status(500).json({
             "code": 500,
-            "error": "Merci de renseigner votre mot de passe."
+            "error": "Le mot de passe n'est pas renseigné."
         }).end();
         return;
     }
@@ -1401,14 +1400,14 @@ app.post("/login", function(request, response) {
     // Recherche de l'utilisateur dans la base de données
     User.findOne({
         "where": {
-            "email": data.email
+            "email": data.email.toLowerCase()
         }
     }).then(function(user) {
         // Utilisateur existant ?
         if (!user) {
             response.status(500).json({
                 "code": 500,
-                "error": "Cette adresse e-mail ne correspond à aucun compte existant."
+                "error": "L'adresse e-mail renseignée ne correspond à aucun compte."
             }).end();
             return;
         }
@@ -1416,7 +1415,7 @@ app.post("/login", function(request, response) {
         if (user.confirmed == null) {
             response.status(500).json({
                 "code": 500,
-                "error": "Ce compte n'a pas encore été activé."
+                "error": "Ce compte n'est pas encore activé."
             }).end();
             return;
         }
@@ -1424,7 +1423,7 @@ app.post("/login", function(request, response) {
         if (user.deleted != null) {
             response.status(500).json({
                 "code": 500,
-                "error": "Ce compte a été désactivé."
+                "error": "Ce compte est désactivé."
             }).end();
             return;
         }
@@ -1432,7 +1431,7 @@ app.post("/login", function(request, response) {
         if (user.password != User.encryptPassword(data.password, user.salt)) {
             response.status(500).json({
                 "code": 500,
-                "error": "Mot de passe incorrect."
+                "error": "Le mot de passe est incorrect."
             }).end();
             return;
         }
@@ -1450,7 +1449,7 @@ app.post("/login", function(request, response) {
         const token = jwt.sign(payload, privateKey);
         response.status(200).json({
             "code": 200,
-            "message": "Vous vous êtes connecté avec succès.",
+            "message": "Connexion réussie.",
             "data": {
                 "createdAt": payload.nbf,
                 "expiresAt": payload.exp,
@@ -1461,7 +1460,7 @@ app.post("/login", function(request, response) {
     }).catch(function() {
         response.status(500).json({
             "code": 500,
-            "error": "Une erreur s'est produite. Merci de retenter l'opération."
+            "error": "Une erreur s'est produite."
         }).end();
         return;
     });

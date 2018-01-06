@@ -723,7 +723,7 @@ app.put("/mesh/new/", [checkUserTokenIsValid, checkUserIsContributor, upload.any
             cleanUploadedFiles(request.files);
             response.status(500).json({
                 "code": 500,
-                "error": "Merci de renseigner un titre valide."
+                "error": "Le titre n'est pas renseigné ou n'est pas valide."
             }).end();
             return;
         }
@@ -731,7 +731,7 @@ app.put("/mesh/new/", [checkUserTokenIsValid, checkUserIsContributor, upload.any
             cleanUploadedFiles(request.files);
             response.status(500).json({
                 "code": 500,
-                "error": "Merci de renseigner un nombre de sommets valide."
+                "error": "Le nombre de sommets n'est pas renseigné ou n'est pas valide."
             }).end();
             return;
         }
@@ -739,7 +739,7 @@ app.put("/mesh/new/", [checkUserTokenIsValid, checkUserIsContributor, upload.any
             cleanUploadedFiles(request.files);
             response.status(500).json({
                 "code": 500,
-                "error": "Merci de renseigner un nombre de cellules valide."
+                "error": "Le nombre de cellules n'est pas renseigné ou n'est pas valide."
             }).end();
             return;
         }
@@ -750,7 +750,7 @@ app.put("/mesh/new/", [checkUserTokenIsValid, checkUserIsContributor, upload.any
             cleanUploadedFiles(request.files);
             response.status(500).json({
                 "code": 500,
-                "error": "Merci de renseigner un fichier de maillage."
+                "error": "Le fichier de maillage n'est pas renseigné."
             }).end();
             return;
         }
@@ -786,62 +786,60 @@ app.put("/mesh/new/", [checkUserTokenIsValid, checkUserIsContributor, upload.any
             sequelize.transaction(function(t) {
                 return Mesh.create(content, {"transaction": t}).then(function(mesh) {
                     createdMesh = mesh; // Sauvegarde du mesh créé
-
-                    // Images
-                    const authorizedMimetypes = ["image/jpeg", "image/gif", "image/png"];
-                    const promises = request.files.map(function(file, i) {
-                        if (file.fieldname == "newImage" && authorizedMimetypes.indexOf(file.mimetype) != -1) {
-                            let promises = [];
-
-                            // Miniature
-                            const thumbname = md5(uniqid()) + ".jpg";
-                            const thumbpath = __dirname + "/public/up/img/" + thumbname;
-                            createdFiles.push(thumbpath);
-                            const thumb = sharp(file.path);
-                            thumb.resize(90, 90);
-                            thumb.crop(sharp.gravity.center);
-                            thumb.toColorspace("srgb");
-                            thumb.jpeg({"quality": 90});
-                            promises.push(thumb.toFile(thumbpath));
-
-                            // Grand format
-                            const name = md5(uniqid()) + ".jpg";
-                            const path = __dirname + "/public/up/img/" + name;
-                            createdFiles.push(path);
-                            const img = sharp(file.path);
-                            img.resize(500, 500);
-                            img.crop(sharp.gravity.center);
-                            img.toColorspace("srgb");
-                            img.jpeg({"quality": 90});
-                            promises.push(img.toFile(path));
-
-                            return Promise.all(promises).then(function() {
-                                return Image.create({
-                                    "meshesId": mesh.id,
-                                    "type": "image/jpeg",
-                                    "path": path,
-                                    "uri": "/up/img/" + name,
-                                    "thumbPath": thumbpath,
-                                    "thumbUri": "/up/img/" + thumbname,
-                                    "isDefault": i == 0 ? true : false
-                                }, 
-                                {"transaction": t}).then(function() {
-                                    // Tags
-                                    if (request.body.tags != null) {
-                                        const tags = request.body.tags.split(",");
-                                        const promises = tags.map(function(tag) {
-                                            return MeshTag.create({
-                                                "tagsId": tag,
-                                                "meshesId": mesh.id
-                                            }, {"transaction": t});
-                                        });
-                                        return Promise.all(promises);
-                                    }
+                    // Tags
+                    let promises = [];
+                    if (request.body.tags != null) {
+                        const tags = request.body.tags.split(",");
+                        promises = tags.map(function(tag) {
+                            return MeshTag.create({
+                                "tagsId": tag,
+                                "meshesId": mesh.id
+                            }, {"transaction": t});
+                        });
+                    }
+                    return Promise.all(promises).then(function() {
+                        // Images
+                        const authorizedMimetypes = ["image/jpeg", "image/gif", "image/png"];
+                        const promises = request.files.map(function(file, i) {
+                            if (file.fieldname == "newImage" && authorizedMimetypes.indexOf(file.mimetype) != -1) {
+                                let promises = [];
+                                // Miniature
+                                const thumbname = md5(uniqid()) + ".jpg";
+                                const thumbpath = __dirname + "/public/up/img/" + thumbname;
+                                createdFiles.push(thumbpath);
+                                const thumb = sharp(file.path);
+                                thumb.resize(90, 90);
+                                thumb.crop(sharp.gravity.center);
+                                thumb.toColorspace("srgb");
+                                thumb.jpeg({"quality": 90});
+                                promises.push(thumb.toFile(thumbpath));
+                                // Grand format
+                                const name = md5(uniqid()) + ".jpg";
+                                const path = __dirname + "/public/up/img/" + name;
+                                createdFiles.push(path);
+                                const img = sharp(file.path);
+                                img.resize(500, 500);
+                                img.crop(sharp.gravity.center);
+                                img.toColorspace("srgb");
+                                img.jpeg({"quality": 90});
+                                promises.push(img.toFile(path));
+                                // Sauvegarde
+                                return Promise.all(promises).then(function() {
+                                    return Image.create({
+                                        "meshesId": mesh.id,
+                                        "type": "image/jpeg",
+                                        "path": path,
+                                        "uri": "/up/img/" + name,
+                                        "thumbPath": thumbpath,
+                                        "thumbUri": "/up/img/" + thumbname,
+                                        "isDefault": i == 0 ? true : false
+                                    }, 
+                                    {"transaction": t});
                                 });
-                            });
-                        }
+                            }
+                        });
+                        return Promise.all(promises);
                     });
-                    return Promise.all(promises);
                 });
             }).then(function(result) {
                 cleanUploadedFiles(request.files);

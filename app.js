@@ -1846,7 +1846,7 @@ app.post("/user/infos/edit/", [checkUserTokenIsValid], function(request, respons
                 let o = {
                     "email": data.email.toLowerCase()
                 };
-                if (data.password != null) {
+                if (data.password != null && data.password.length) {
                     o.password = User.encryptPassword(data.password, user.salt);
                 }
                 if (data.firstname != null && data.firstname.length) {

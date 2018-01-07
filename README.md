@@ -60,6 +60,103 @@ Retourne
 
 **GET** https://api.maillage.guillaumeperes.fr/categories/list/
 
+Moteur de recherche à facettes. Liste les catégories, avec leurs tags associés, qui correspondent aux fichiers de maillage retournés par les options de filtrage passées en paramètre.
+
+Liste des options de filtrage : 
+
+| Nom | Type | Exemple | Description |
+|-----|------|---------|-------------|
+| `filters` | Tableau d'entiers | `"filters[]=1&filters[]=2&filters[]=3"` | Liste des facettes déjà sélectionnées |
+| `keyword` | Chaîne de caractères | `"ChineeseDragon"` | Mot-clé |
+
+Retourne un objet json de la forme 
+
+```json
+[
+    {
+        "id": 1,
+        "title": "Plan",
+        "protected": true,
+        "color": "#e8e8e8",
+        "created": "2017-12-28T11:28:47.000Z",
+        "updated": null,
+        "tags": [
+            {
+                "id": 2,
+                "categoriesId": 1,
+                "title": "3D surfacique",
+                "protected": true,
+                "created": "2017-12-28T11:28:47.000Z",
+                "updated": null,
+                "occurences": "1"
+            },
+            {
+                "id": 3,
+                "categoriesId": 1,
+                "title": "3D volumique",
+                "protected": true,
+                "created": "2017-12-28T11:28:47.000Z",
+                "updated": null,
+                "occurences": "9"
+            }
+        ]
+    },
+    {
+        "id": 2,
+        "title": "Type de maillage",
+        "protected": true,
+        "color": "#e8e8e8",
+        "created": "2017-12-28T11:28:47.000Z",
+        "updated": null,
+        "tags": [
+            {
+                "id": 4,
+                "categoriesId": 2,
+                "title": "Triangulaire",
+                "protected": true,
+                "created": "2017-12-28T11:28:47.000Z",
+                "updated": null,
+                "occurences": "8"
+            },
+            {
+                "id": 8,
+                "categoriesId": 2,
+                "title": "Hybride",
+                "protected": true,
+                "created": "2017-12-28T11:28:47.000Z",
+                "updated": null,
+                "occurences": "1"
+            }
+        ]
+    },
+    {
+        "id": 3,
+        "title": "Type d'objet",
+        "protected": true,
+        "color": "#e8e8e8",
+        "created": "2017-12-28T11:28:47.000Z",
+        "updated": null,
+        "tags": [
+            {
+                "id": 12,
+                "categoriesId": 3,
+                "title": "Immeuble",
+                "protected": true,
+                "created": "2017-12-28T11:28:47.000Z",
+                "updated": null,
+                "occurences": "1"
+            }
+        ]
+    }
+]
+``` 
+
+En cas d'erreur ou d'absence de résultats, retourne un tableau json vide.
+
+```json
+[]
+```
+
 **GET** https://api.maillage.guillaumeperes.fr/users/list/
 
 **GET** https://api.maillage.guillaumeperes.fr/meshes/sorts/

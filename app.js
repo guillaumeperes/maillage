@@ -910,7 +910,7 @@ app.get("/mesh/:mesh_id([0-9]*)/view/", checkMeshExists, function(request, respo
         const tagsIds = mesh.tags.map(function(tag) {
             return tag.id;
         });
-        Category.findAll({
+        Category.findAll({  
             "include": {
                 "model": Tag,
                 "where": Sequelize.or({"id": tagsIds})
@@ -932,8 +932,258 @@ app.get("/mesh/:mesh_id([0-9]*)/view/", checkMeshExists, function(request, respo
 /**
 * Met à jour les données d'un fichier de maillage
 */
-app.post("/mesh/:mesh_id([0-9]*)/edit/", [checkUserTokenIsValid, checkUserIsContributor, checkMeshExists], function(request, response) {
-    // TODO
+app.post("/mesh/:mesh_id([0-9]*)/edit/", [checkUserTokenIsValid, checkUserIsContributor, checkMeshExists, upload.any()], function(request, response) {
+    const data = request.body;
+
+    // Vérification des données requises
+
+    if (data.title == null || !data.title.length) {
+        cleanUploadedFiles(request.files);
+        response.status(500).json({
+            "code": 500,
+            "error": "Le titre n'est pas renseigné ou n'est pas valide."
+        }).end();
+        return;
+    }
+    if (data.vertices == null || !data.vertices.length || /^(0|[1-9]\d*)$/.test(data.vertices) === false) {
+        cleanUploadedFiles(request.files);
+        response.status(500).json({
+            "code": 500,
+            "error": "Le nombre de sommets n'est pas renseigné ou n'est pas valide."
+        }).end();
+        return;
+    }
+    if (data.cells == null || !data.cells.length || /^(0|[1-9]\d*)$/.test(data.cells) === false) {
+        cleanUploadedFiles(request.files);
+        response.status(500).json({
+            "code": 500,
+            "error": "Le nombre de cellules n'est pas renseigné ou n'est pas valide."
+        }).end();
+        return;
+    }
+    const newmeshfile = request.files.find(function(file) {
+        return file.fieldname == "newMesh";
+    });
+
+    let filesToDelete = [];
+    Mesh.findById(request.params.mesh_id).then(function(mesh) {
+        let content = {
+            "title": data.title,
+            "vertices": data.vertices,
+            "cells": data.cells,
+            "description": (data.description != null && data.description.length > 0) ? data.description : null
+        };
+        let meshfilePromises = [];
+        if (newmeshfile != null) {
+            // Nouveau fichier de maillage
+            filesToDelete.push(mesh.filepath);
+            const extension = newmeshfile.originalname.split(".").pop();
+            const newPath = __dirname + "/meshes/" + md5(uniqid()) + "." + extension;
+            meshfilePromises[0] = fs.rename(newmeshfile.path, newPath, function(error) {
+                if (error) {
+                    cleanUploadedFiles(request.files);
+                    response.status(500).json({
+                        "code": 500,
+                        "error": "Une erreur s'est produite."
+                    }).end();
+                    return;
+                }
+                content.filename = newmeshfile.originalname;
+                content.filepath = newPath;
+                content.filesize = newmeshfile.size;
+                content.filetype = extension;
+            });
+        }
+        Promise.all(meshfilePromises).then(function() {
+            let createdFiles = [];
+            sequelize.transaction(function(t) {
+                return mesh.update(content, {"transaction": t}).then(function(mesh) {
+                    // Tags
+                    return MeshTag.destroy({"where": {"meshesId": mesh.id}, "transaction": t}).then(function() {
+                        let tagsPromises = [];
+                        if (data.tags != null) {
+                            const tags = data.tags.split(",");
+                            tagsPromises = tags.map(function(tag) {
+                                return MeshTag.create({
+                                    "tagsId": tag,
+                                    "meshesId": mesh.id
+                                }, {"transaction": t});
+                            });
+                        }
+                        // Images
+                        return Promise.all(tagsPromises).then(function() {
+                            let keepImages = [];
+                            if (data.images != null) {
+                                const images = data.images.split(",");
+                                keepImages = images.map(function(image) {
+                                    return parseInt(image, 10) || 0;
+                                });
+                                keepImages = keepImages.filter(function(image) {
+                                    return image > 0;
+                                });
+                            }
+                            let options = {
+                                "where": {
+                                    "meshesId": mesh.id
+                                },
+                                "transaction": t
+                            };
+                            if (keepImages.length > 0) {
+                                options.where.id = {
+                                    $notIn: keepImages
+                                };
+                            }
+                            return Image.findAll(options).then(function(images) {
+                                // Supprime les fichiers des images qu'on ne veut pas garder
+                                const promises = images.map(function(image) {
+                                    filesToDelete.push(image.path);
+                                    filesToDelete.push(image.thumbPath);
+                                    return image.destroy({"transaction": t});
+                                });
+                                return Promise.all(promises).then(function() {
+                                    // Nouvelles images
+                                    const authorizedMimetypes = ["image/jpeg", "image/gif", "image/png"];
+                                    const promises = request.files.map(function(file) {
+                                        if (file.fieldname == "newImage" && authorizedMimetypes.indexOf(file.mimetype) != -1) {
+                                            let promises = [];
+
+                                            // Miniature
+                                            const thumbname = md5(uniqid()) + ".jpg";
+                                            const thumbpath = __dirname + "/public/up/img/" + thumbname;
+                                            createdFiles.push(thumbpath);
+                                            const thumb = sharp(file.path);
+                                            thumb.resize(90, 90);
+                                            thumb.crop(sharp.gravity.center);
+                                            thumb.toColorspace("srgb");
+                                            thumb.jpeg({"quality": 90});
+                                            promises.push(thumb.toFile(thumbpath));
+
+                                            // Grand format
+                                            const name = md5(uniqid()) + ".jpg";
+                                            const path = __dirname + "/public/up/img/" + name;
+                                            createdFiles.push(path);
+                                            const img = sharp(file.path);
+                                            img.resize(500, 500);
+                                            img.crop(sharp.gravity.center);
+                                            img.toColorspace("srgb");
+                                            img.jpeg({"quality": 90});
+                                            promises.push(img.toFile(path));
+
+                                            // Sauvegarde
+                                            return Promise.all(promises).then(function() {
+                                                return Image.create({
+                                                    "meshesId": mesh.id,
+                                                    "type": "image/jpeg",
+                                                    "path": path,
+                                                    "uri": "/up/img/" + name,
+                                                    "thumbPath": thumbpath,
+                                                    "thumbUri": "/up/img/" + thumbname,
+                                                    "isDefault": false
+                                                }, {"transaction": t});
+                                            });
+                                        }
+                                    });
+                                    if (keepImages.length > 0 && promises.length > 0) {
+                                        return Promise.all(promises).then(function() {
+                                            return sequelize.query("UPDATE images SET is_default = false WHERE meshes_id = " + mesh.id, {type: sequelize.QueryTypes.UPDATE, transaction: t}).then(function() {
+                                                return Image.findOne({
+                                                    "where": {
+                                                        "meshesId": mesh.id
+                                                    },
+                                                    "order": [
+                                                        ["id", "ASC"]
+                                                    ],
+                                                    "limit": 1,
+                                                    "transaction": t
+                                                }).then(function(image) {
+                                                    if (image) {
+                                                        return image.update({
+                                                            "isDefault": true
+                                                        }, {"transaction": t});
+                                                    }
+                                                });
+                                            });
+                                        });
+                                    } else {
+                                        return Promise.all(promises);
+                                    }
+                                });
+                            });
+                        });
+                    });
+                });
+            }).then(function() {
+                cleanUploadedFiles(request.files);
+                const promises = filesToDelete.map(function(file) {
+                    return fs.unlink(file, function(error) {});
+                });
+                Promise.all(promises).then(function() {
+                    Mesh.findById(mesh.id, {
+                        "include": [{
+                            "model": Tag,
+                            "include": [{
+                                "model": Category
+                            }]
+                        }, {
+                            "model": Image,
+                            "where": {
+                                "isDefault": true
+                            }
+                        }]
+                    }).then(function(mesh) {
+                        response.status(200).json({
+                            "code": 200,
+                            "message": "Le fichier de maillage a été modifé avec succès.",
+                            "data": {
+                                "mesh": mesh
+                            }
+                        }).end();
+                        return;
+                    });
+                }).catch(function(error) {
+                    cleanUploadedFiles(request.files);
+                    if (content.filepath != null) {
+                        fs.unlink(content.filepath, function() {/* Do nothing */});
+                    }
+                    createdFiles.forEach(function(createdFile) {
+                        fs.unlink(createdFile, function() {/* do nothing */});  
+                    });
+                    response.status(500).json({
+                        "code": 500,
+                        "error": "Une erreur s'est produite."
+                    }).end();
+                    return;
+                });
+            }).catch(function(error) {
+                cleanUploadedFiles(request.files);
+                if (content.filepath != null) {
+                    fs.unlink(content.filepath, function() {/* Do nothing */});
+                }
+                createdFiles.forEach(function(createdFile) {
+                    fs.unlink(createdFile, function() {/* do nothing */});  
+                });
+                response.status(500).json({
+                    "code": 500,
+                    "error": "Une erreur s'est produite."
+                }).end();
+                return;
+            });
+        }).catch(function(error) {
+            cleanUploadedFiles(request.files);
+            response.status(500).json({
+                "code": 500,
+                "error": "Une erreur s'est produite."
+            }).end();
+            return;
+        });
+    }).catch(function() {
+        cleanUploadedFiles(request.files);
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
 });
 
 /**

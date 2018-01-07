@@ -216,6 +216,124 @@ Retourne un objet json sous la forme :
 
 **GET** https://api.maillage.guillaumeperes.fr/mesh/(mesh_id)/view/
 
+Retourne les données du fichier de maillage idendifié par l'entier positif mesh_id.
+
+Retourne un objet json de la forme :
+
+```json
+{
+    "id": 1,
+    "usersId": 1,
+    "title": "B1",
+    "description": null,
+    "vertices": "10935",
+    "cells": "21870",
+    "filename": "B1.mesh",
+    "filepath": "\/web\/maillage_api.guillaumeperes.fr\/meshes\/B1.mesh",
+    "filesize": "10000",
+    "filetype": "mesh",
+    "created": "2017-12-28T11:28:54.000Z",
+    "updated": null,
+    "tags": [
+        {
+            "id": 3,
+            "categoriesId": 1,
+            "title": "3D volumique",
+            "protected": true,
+            "created": "2017-12-28T11:28:47.000Z",
+            "updated": null,
+            "meshesTags": {
+                "id": 1,
+                "tagsId": 3,
+                "meshesId": 1
+            }
+        },
+        {
+            "id": 4,
+            "categoriesId": 2,
+            "title": "Triangulaire",
+            "protected": true,
+            "created": "2017-12-28T11:28:47.000Z",
+            "updated": null,
+            "meshesTags": {
+                "id": 2,
+                "tagsId": 4,
+                "meshesId": 1
+            }
+        }
+    ],
+    "images": [
+        {
+            "id": 1,
+            "meshesId": 1,
+            "path": "\/web\/maillage_api\/public\/up\/img\/B1.png",
+            "uri": "\/up\/img\/B1.png",
+            "thumbPath": "\/web\/maillage_api\/public\/up\/img\/B1_thumb.png",
+            "thumbUri": "\/up\/img\/B1_thumb.png",
+            "isDefault": true
+        }
+    ],
+    "user": {
+        "id": 1,
+        "email": "gperes@mamasam.com",
+        "password": "1ef54ab7f1ba61e3dbac9384f73a46a14edbd92326cfe30251ab1d8f3a3bda4b7769ab3f39104b5158d4cd4cd859ef67bc5cb97109db58ccf6219e12d6a7c22d",
+        "salt": "df6bee8cfd4f1edd2a0a973355019886",
+        "firstname": "Guillaume",
+        "lastname": "Peres",
+        "confirmed": "2017-12-28T11:28:54.000Z",
+        "created": "2017-12-28T11:28:54.000Z",
+        "updated": null
+    },
+    "tagsCategories": [
+        {
+            "id": 1,
+            "title": "Plan",
+            "protected": true,
+            "color": "#e8e8e8",
+            "created": "2017-12-28T11:28:47.000Z",
+            "updated": null,
+            "tags": [
+                {
+                    "id": 3,
+                    "categoriesId": 1,
+                    "title": "3D volumique",
+                    "protected": true,
+                    "created": "2017-12-28T11:28:47.000Z",
+                    "updated": null
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "title": "Type de maillage",
+            "protected": true,
+            "color": "#e8e8e8",
+            "created": "2017-12-28T11:28:47.000Z",
+            "updated": null,
+            "tags": [
+                {
+                    "id": 4,
+                    "categoriesId": 2,
+                    "title": "Triangulaire",
+                    "protected": true,
+                    "created": "2017-12-28T11:28:47.000Z",
+                    "updated": null
+                }
+            ]
+        }
+    ]
+}
+```
+
+En cas d'erreur (si l'identifiant passé ne correspond à aucun contenu existant), un objet json de cette forme est retourné : 
+
+```json
+{
+    "code": 404,
+    "error": "Le fichier de maillage demandé n'a pas été trouvé."
+}
+```
+
 **POST** https://api.maillage.guillaumeperes.fr/mesh/(mesh_id)/edit/
 
 **DELETE** https://api.maillage.guillaumeperes.fr/mesh/(mesh_id)/delete/

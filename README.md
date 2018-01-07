@@ -1,0 +1,97 @@
+# Maillages API
+
+Ceci est l'API de l'application de gestion de fichiers de maillages développée par Sarah Pierson et Guillaume Peres. Cette API repose sur l'utilisation de NodeJS et stocke ses données dans Postgresql 9.6. Un serveur nginx est utilisé comme reverse proxy pour accéder aux fonctionnalités de l'api depuis internet sur le port 80, et supervisord la maintient active. 
+
+# Documentation
+
+## Routes
+
+**GET** https://api.maillage.guillaumeperes.fr/categories/alltags/
+
+Retourne la liste des catégories avec leurs tags associés.
+
+Retourne 
+
+```json
+[{
+  "id":1,
+  "title":"Plan",
+  "protected":true,
+  "color":"#e8e8e8",
+  "created":"2017-12-28T11:28:47.000Z",
+  "updated":null,
+  "tags":[{
+    "id":1,
+    "categoriesId":1,
+    "title":"2D",
+    "protected":true,
+    "created":
+    "2017-12-28T11:28:47.000Z",
+    "updated":null,
+    "meshes":[{
+      "id":10,
+      "usersId":1,
+      "title":
+      "Porte étrange",
+      "description":"Porte, vraiment, très étrange",
+      "vertices":"321",
+      "cells":"123",
+      "filename":"C2.mesh",
+      "filepath":"/home/web/maillage_api.guillaumeperes.fr/meshes/3d2901d0207b18089141b26c031643ef.mesh",
+      "filesize":"2442210",
+      "filetype":"mesh",
+      "created":"2017-12-28T11:49:43.000Z",
+      "updated":"2017-12-28T11:49:43.000Z",
+      "meshesTags":[{
+        "id":22,
+        "tagsId":2,
+        "meshesId":10
+      }]
+    }]
+  }]
+}]
+```
+
+**GET** https://api.maillage.guillaumeperes.fr/categories/list/
+
+**GET** https://api.maillage.guillaumeperes.fr/users/list/
+
+**GET** https://api.maillage.guillaumeperes.fr/meshes/sorts/
+
+**GET** https://api.maillage.guillaumeperes.fr/meshes/search/
+
+**PUT** https://api.maillage.guillaumeperes.fr/mesh/new/
+
+**GET** https://api.maillage.guillaumeperes.fr/mesh/(mesh_id)/view/
+
+**POST** https://api.maillage.guillaumeperes.fr/mesh/(mesh_id)/edit/
+
+**DELETE** https://api.maillage.guillaumeperes.fr/mesh/(mesh_id)/delete/
+
+**GET** https://api.maillage.guillaumeperes.fr/mesh/(mesh_id)/download/
+
+**PUT** https://api.maillage.guillaumeperes.fr/categories/new/
+
+**GET** https://api.maillage.guillaumeperes.fr/categories/(category_id)/detail/
+
+**POST** https://api.maillage.guillaumeperes.fr/categories/(category_id)/edit/
+
+**DELETE** https://api.maillage.guillaumeperes.fr/categories/(category_id)/delete/
+
+**PUT** https://api.maillage.guillaumeperes.fr/categories/(category_id)/tags/new/
+
+**GET** https://api.maillage.guillaumeperes.fr/tags/(tag_id)/detail/
+
+**POST** https://api.maillage.guillaumeperes.fr/tags/(tag_id)/edit/
+
+**DELETE** https://api.maillage.guillaumeperes.fr/tags/(tag_id)/delete/
+
+**POST** https://api.maillage.guillaumeperes.fr/register/
+
+**POST** https://api.maillage.guillaumeperes.fr/login/
+
+**GET** https://api.maillage.guillaumeperes.fr/user/revive/
+
+**DELETE** https://api.maillage.guillaumeperes.fr/users/(user_id)/delete/
+
+**GET** https://api.maillage.guillaumeperes.fr/user/roles/

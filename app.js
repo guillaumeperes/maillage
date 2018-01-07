@@ -681,10 +681,7 @@ app.get("/meshes/search/", function(request, response) {
                 "model": Category
             }]
         }, {
-            "model": Image,
-            "where": {
-                "isDefault": true
-            }
+            "model": Image
         }],
         "order": [
             [orderColumn, orderDirection],
@@ -788,9 +785,8 @@ app.put("/mesh/new/", [checkUserTokenIsValid, checkUserIsContributor, upload.any
                     createdMesh = mesh; // Sauvegarde du mesh créé
                     // Tags
                     let promises = [];
-                    if (request.body.tags != null) {
-                        const tags = request.body.tags.split(",");
-                        promises = tags.map(function(tag) {
+                    if (data.tags != null) {
+                        promises = data.tags.map(function(tag) {
                             return MeshTag.create({
                                 "tagsId": tag,
                                 "meshesId": mesh.id
@@ -847,10 +843,7 @@ app.put("/mesh/new/", [checkUserTokenIsValid, checkUserIsContributor, upload.any
                     "include": [{
                         "model": Tag,
                     }, {
-                        "model": Image,
-                        "where": {
-                            "isDefault": true
-                        }
+                        "model": Image
                     }],
                     "order": [
                         ["id", "ASC"],
@@ -1002,8 +995,7 @@ app.post("/mesh/:mesh_id([0-9]*)/edit/", [checkUserTokenIsValid, checkUserIsCont
                     return MeshTag.destroy({"where": {"meshesId": mesh.id}, "transaction": t}).then(function() {
                         let tagsPromises = [];
                         if (data.tags != null) {
-                            const tags = data.tags.split(",");
-                            tagsPromises = tags.map(function(tag) {
+                            tagsPromises = data.tags.map(function(tag) {
                                 return MeshTag.create({
                                     "tagsId": tag,
                                     "meshesId": mesh.id
@@ -1014,8 +1006,7 @@ app.post("/mesh/:mesh_id([0-9]*)/edit/", [checkUserTokenIsValid, checkUserIsCont
                         return Promise.all(tagsPromises).then(function() {
                             let keepImages = [];
                             if (data.images != null) {
-                                const images = data.images.split(",");
-                                keepImages = images.map(function(image) {
+                                keepImages = data.images.map(function(image) {
                                     return parseInt(image, 10) || 0;
                                 });
                                 keepImages = keepImages.filter(function(image) {
@@ -1083,7 +1074,7 @@ app.post("/mesh/:mesh_id([0-9]*)/edit/", [checkUserTokenIsValid, checkUserIsCont
                                             });
                                         }
                                     });
-                                    if (keepImages.length > 0 && promises.length > 0) {
+                                    if (keepImages.length > 0 || promises.length > 0) {
                                         return Promise.all(promises).then(function() {
                                             return sequelize.query("UPDATE images SET is_default = false WHERE meshes_id = " + mesh.id, {type: sequelize.QueryTypes.UPDATE, transaction: t}).then(function() {
                                                 return Image.findOne({
@@ -1125,10 +1116,7 @@ app.post("/mesh/:mesh_id([0-9]*)/edit/", [checkUserTokenIsValid, checkUserIsCont
                                 "model": Category
                             }]
                         }, {
-                            "model": Image,
-                            "where": {
-                                "isDefault": true
-                            }
+                            "model": Image
                         }]
                     }).then(function(mesh) {
                         response.status(200).json({

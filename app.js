@@ -1879,6 +1879,36 @@ app.post("/user/infos/edit/", [checkUserTokenIsValid], function(request, respons
     });
 });
 
+/**
+* Efface le compte identifié par le token de connexion
+*/
+app.delete("/user/delete/", [checkUserTokenIsValid], function(request, response) {
+    const token = request.body.token || request.query.token || request.headers["x-access-token"];
+    const payload = jwt.verify(token, privateKey);
+    User.findById(payload.uid).then(function(user) {
+        user.destroy().then(function() {
+            response.status(200).json({
+                "code": 200,
+                "message": "Le compte utilisateur a été supprimé avec succès."
+            }).end();
+            return;
+        }).catch(function(error) {
+            response.status(500).json({
+                "code": 500,
+                "error": "Une erreur s'est produite."
+            }).end();
+            return;
+        });
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    })
+});
+
+/**
 * Liste les rôles de l'utilisateur identifié par le token de connexion
 */
 app.get("/user/roles/", [checkUserTokenIsValid], function(request, response) {

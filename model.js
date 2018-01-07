@@ -313,7 +313,7 @@ const User = sequelize.define("users", {
     "createdAt": "created",
     "updatedAt": "updated",
     "deletedAt": "deleted",
-    "paranoid": false,
+    "paranoid": true,
     "freezeTableName": true,
     "tableName": "users"
 });

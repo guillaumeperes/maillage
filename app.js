@@ -994,7 +994,7 @@ app.post("/mesh/:mesh_id([0-9]*)/edit/", [checkUserTokenIsValid, checkUserIsCont
                     // Tags
                     return MeshTag.destroy({"where": {"meshesId": mesh.id}, "transaction": t}).then(function() {
                         let tagsPromises = [];
-                        if (data.tags != null) {
+                        if (data.tags != null && Array.isArray(data.tags)) {
                             tagsPromises = data.tags.map(function(tag) {
                                 return MeshTag.create({
                                     "tagsId": tag,
@@ -1005,7 +1005,7 @@ app.post("/mesh/:mesh_id([0-9]*)/edit/", [checkUserTokenIsValid, checkUserIsCont
                         // Images
                         return Promise.all(tagsPromises).then(function() {
                             let keepImages = [];
-                            if (data.images != null) {
+                            if (data.images != null && Array.isArray(data.images)) {
                                 keepImages = data.images.map(function(image) {
                                     return parseInt(image, 10) || 0;
                                 });

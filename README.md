@@ -68,6 +68,26 @@ Retourne
 
 **DELETE** https://api.maillage.guillaumeperes.fr/mesh/(mesh_id)/delete/
 
+Supprime le fichier de maillage identifié par l'entier positif ```mesh_id``` ainsi que tous les fichiers qui lui sont associés (fichier physique et images).
+
+En cas de succès, retourne l'object JSON suivant : 
+
+```json
+{
+  "code": 200,
+  "message": "Le fichier de maillage a été effacé avec succès."
+}
+```
+
+En cas d'erreur, retourne : 
+
+```json
+{
+  "code": 500,
+  "error": "Une erreur s'est produite."
+}
+```
+
 **GET** https://api.maillage.guillaumeperes.fr/mesh/(mesh_id)/download/
 
 **PUT** https://api.maillage.guillaumeperes.fr/categories/new/
@@ -78,6 +98,26 @@ Retourne
 
 **DELETE** https://api.maillage.guillaumeperes.fr/categories/(category_id)/delete/
 
+Supprime la categorie de tags identifiée par l'entier positif ```category_id``` ainsi que tous ses tags associés.
+
+En cas de succès, retourne l'object JSON suivant : 
+
+```json
+{
+  "code": 200,
+  "message": "La catégorie a été supprimée avec succès."
+}
+```
+
+En cas d'erreur, retourne : 
+
+```json
+{
+  "code": 500,
+  "error": "Une erreur s'est produite."
+}
+```
+
 **PUT** https://api.maillage.guillaumeperes.fr/categories/(category_id)/tags/new/
 
 **GET** https://api.maillage.guillaumeperes.fr/tags/(tag_id)/detail/
@@ -85,6 +125,26 @@ Retourne
 **POST** https://api.maillage.guillaumeperes.fr/tags/(tag_id)/edit/
 
 **DELETE** https://api.maillage.guillaumeperes.fr/tags/(tag_id)/delete/
+
+Supprime le tag associé à l'entier positif ```tag_id```. 
+
+En cas de succès, retourne l'object JSON suivant : 
+
+```json
+{
+  "code": 200,
+  "message": "Le tag a été supprimé avec succès."
+}
+```
+
+En cas d'erreur, retourne : 
+
+```json
+{
+  "code": 500,
+  "error": "Une erreur s'est produite."
+}
+```
 
 **POST** https://api.maillage.guillaumeperes.fr/register/
 

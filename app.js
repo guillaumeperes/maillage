@@ -955,7 +955,7 @@ app.delete("/mesh/:mesh_id([0-9]*)/delete/", [checkUserTokenIsValid, checkUserIs
             mesh.destroy().then(function() {
                 response.status(200).json({
                     "code": 200,
-                    "error": "Le fichier de maillage a été effacé avec succès."
+                    "message": "Le fichier de maillage a été effacé avec succès."
                 }).end();
                 return;
             }).catch(function() {

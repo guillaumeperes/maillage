@@ -8,6 +8,50 @@ Ceci est l'API de l'application de gestion de fichiers de maillages développée
 
 **GET** https://api.maillage.guillaumeperes.fr/categories/alltags/
 
+Retourne la liste des catégories avec leurs tags associés.
+
+Retourne 
+
+```json
+[{
+  "id":1,
+  "title":"Plan",
+  "protected":true,
+  "color":"#e8e8e8",
+  "created":"2017-12-28T11:28:47.000Z",
+  "updated":null,
+  "tags":[{
+    "id":1,
+    "categoriesId":1,
+    "title":"2D",
+    "protected":true,
+    "created":
+    "2017-12-28T11:28:47.000Z",
+    "updated":null,
+    "meshes":[{
+      "id":10,
+      "usersId":1,
+      "title":
+      "Porte étrange",
+      "description":"Porte, vraiment, très étrange",
+      "vertices":"321",
+      "cells":"123",
+      "filename":"C2.mesh",
+      "filepath":"/home/web/maillage_api.guillaumeperes.fr/meshes/3d2901d0207b18089141b26c031643ef.mesh",
+      "filesize":"2442210",
+      "filetype":"mesh",
+      "created":"2017-12-28T11:49:43.000Z",
+      "updated":"2017-12-28T11:49:43.000Z",
+      "meshesTags":[{
+        "id":22,
+        "tagsId":2,
+        "meshesId":10
+      }]
+    }]
+  }]
+}]
+```
+
 **GET** https://api.maillage.guillaumeperes.fr/categories/list/
 
 **GET** https://api.maillage.guillaumeperes.fr/users/list/

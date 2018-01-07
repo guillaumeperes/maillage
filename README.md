@@ -58,6 +58,55 @@ Retourne
 
 **GET** https://api.maillage.guillaumeperes.fr/meshes/sorts/
 
+Liste les options de tri de la liste des fichiers de maillage supportés par l'API.
+
+Retourne un objet json sous la forme : 
+
+```json
+[
+    {
+        "name": "title",
+        "label": "Ordre alphabétique",
+        "default": true
+    },
+    {
+        "name": "title-reverse",
+        "label": "Ordre alphabétique inverse",
+        "default": false
+    },
+    {
+        "name": "cells",
+        "label": "Nombre de cellules : croissant",
+        "default": false
+    },
+    {
+        "name": "cells-reverse",
+        "label": "Nombre de cellules : décroissant",
+        "default": false
+    },
+    {
+        "name": "vertices",
+        "label": "Nombre de sommets : croissant",
+        "default": false
+    },
+    {
+        "name": "vertices-reverse",
+        "label": "Nombre de sommets : décroissant",
+        "default": false
+    },
+    {
+        "name": "created",
+        "label": "Du plus ancien au plus récent",
+        "default": false
+    },
+    {
+        "name": "created-reverse",
+        "label": "Du plus récent au plus ancien",
+        "default": false
+    }
+]
+```
+
 **GET** https://api.maillage.guillaumeperes.fr/meshes/search/
 
 **PUT** https://api.maillage.guillaumeperes.fr/mesh/new/

@@ -1758,6 +1758,125 @@ app.delete("/users/:userId([0-9]*)/delete",[checkUserTokenIsValid, checkUserIsAd
 });
 
 /**
+* Retourne les données du compte identifié par le token de connexion
+*/
+app.get("/user/infos/", [checkUserTokenIsValid], function(request, response) {
+    const token = request.body.token || request.query.token || request.headers["x-access-token"];
+    const payload = jwt.verify(token, privateKey);
+    User.findById(payload.uid, {
+        "attributes": ["id", "email", "firstname", "lastname", "created", "updated"]
+    }).then(function(user) {
+        response.status(200).json(user).end();
+        return;
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
+});
+
+/**
+* Met à jour les données du compte identifié par le token de connexion
+*/
+app.post("/user/infos/edit/", [checkUserTokenIsValid], function(request, response) {
+    const token = request.body.token || request.query.token || request.headers["x-access-token"];
+    const payload = jwt.verify(token, privateKey);
+    User.findById(payload.uid).then(function(user) {
+        const data = request.body;
+
+        // Vérification des données
+        if (data.email == null || !data.email.length || !validator.validate(data.email)) {
+            response.status(500).json({
+                "code": 500,
+                "error": "L'adresse e-mail n'est pas renseignée ou n'est pas valide."
+            }).end();
+            return;
+        }
+        if ((data.password != null && data.password.length) || (data.password2 != null && data.password2.length)) {
+            if (data.email == null || !data.email.length || !validator.validate(data.email)) {
+                response.status(500).json({
+                    "code": 500,
+                    "error": "L'adresse e-mail n'est pas renseignée ou n'est pas valide."
+                }).end();
+                return;
+            }
+            if (data.password.length < 5) {
+                response.status(500).json({
+                    "code": 500,
+                    "error": "Le mot de passe fait moins de 5 caractères."
+                }).end();
+                return;
+            }
+            if (data.password2 == null || !data.password2.length) {
+                response.status(500).json({
+                    "code": 500,
+                    "error": "La confirmation du mot de passe est absente."
+                }).end();
+                return;
+            }
+            if (data.password !== data.password2) {
+                response.status(500).json({
+                    "code": 500,
+                    "error": "Le mot de passe et sa confirmation ne sont pas identiques."
+                }).end();
+                return;
+            }
+        }
+        // On vérifie qu'il n'y a pas déjà un user avec l'adresse e-mail renseignée
+        User.count({
+            "where": {
+                "id": {
+                    $ne: user.id
+                },
+                "email": data.email.toLowerCase()
+            }
+        }).then(function(count) {
+            if (count > 0) {
+                // Il y a déjà un utilisateur avec l'adresse e-mail renseignée
+                response.status(500).json({
+                    "code": 500,
+                    "error": "Cette adresse e-mail est déjà associée à un compte."
+                }).end();
+                return;
+            } else {
+                let o = {
+                    "email": data.email.toLowerCase()
+                };
+                if (data.password != null) {
+                    o.password = User.encryptPassword(data.password, user.salt);
+                }
+                if (data.firstname != null && data.firstname.length) {
+                    o.firstname = data.firstname;
+                }
+                if (data.lastname != null && data.lastname.length) {
+                    o.lastname = data.lastname.toLocaleUpperCase();
+                }
+                user.update(o).then(function() {
+                    response.status(200).json({
+                        "code": 200,
+                        "message": "Les données du compte ont été mises à jour avec succès."
+                    }).end();
+                    return;
+                }).catch(function() {
+                    response.status(500).json({
+                        "code": 500,
+                        "error": "Une erreur s'est produite."
+                    }).end();
+                    return;
+                });
+            }
+        });
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
+});
+
 * Liste les rôles de l'utilisateur identifié par le token de connexion
 */
 app.get("/user/roles/", [checkUserTokenIsValid], function(request, response) {

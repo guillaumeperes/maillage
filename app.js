@@ -530,18 +530,19 @@ app.get("/categories/list/", function(request, response) {
 */
 app.get("/users/list/", function(request, response){
     User.findAll({
-            "include": [{
-                "model": Role
-            }],
-    "order": [
-                ["email", "ASC"],
-                ["id", "ASC"],
-                [Role, "title", "ASC"],
-                [Role, "id", "ASC"]
-            ]
-        }).then(function(users) { 
-            response.json(users);
-        }); 
+        "include": [{
+            "model": Role
+        }],
+        "paranoid": false,
+        "order": [
+            ["email", "ASC"],
+            ["id", "ASC"],
+            [Role, "title", "ASC"],
+            [Role, "id", "ASC"]
+        ]
+    }).then(function(users) { 
+        response.json(users);
+    }); 
 });
 
 /**
@@ -897,7 +898,8 @@ app.get("/mesh/:mesh_id([0-9]*)/view/", checkMeshExists, function(request, respo
         }, {
             "model": Image
         }, {
-            "model": User
+            "model": User,
+            "paranoid": false
         }]
     }).then(function(mesh) {
         const tagsIds = mesh.tags.map(function(tag) {

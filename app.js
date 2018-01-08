@@ -526,23 +526,168 @@ app.get("/categories/list/", function(request, response) {
 });
 
 /**
-* Liste des utilisateurs
+* Liste des utilisateurs confirmés
 */
-app.get("/users/list/", function(request, response){
+app.get("/users/list/confirmed/", [checkUserTokenIsValid, checkUserIsAdmin], function(request, response){
     User.findAll({
+        "attributes": ["id", "email", "firstname", "lastname", "confirmed"],
         "include": [{
-            "model": Role
+            "model": Role,
+            "attributes": ["name", "title"],
+            "through": {
+                "attributes": []
+            },  
         }],
+        "where": {
+            "confirmed": {
+                $ne: null
+            }
+        }
+    }).then(function(users) {
+        response.status(200).json(users).end();
+        return;
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
+});
+
+/**
+* Liste des utilisateurs en attente d'être confirmés
+*/
+app.get("/users/list/pending/", [checkUserTokenIsValid, checkUserIsAdmin], function(request, response) {
+    User.findAll({
+        "attributes": ["id", "email", "firstname", "lastname"],
+        "where": {
+            "confirmed": {
+                $eq: null
+            }
+        }
+    }).then(function(users) {
+        response.status(200).json(users).end();
+        return;
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
+});
+
+/**
+* Liste les utilisateurs effacés
+*/
+app.get("/users/list/deleted/", [checkUserTokenIsValid, checkUserIsAdmin], function(request, response) {
+    User.findAll({
+        "attributes": ["id", "email", "firstname", "lastname", "deleted"],
         "paranoid": false,
-        "order": [
-            ["email", "ASC"],
-            ["id", "ASC"],
-            [Role, "title", "ASC"],
-            [Role, "id", "ASC"]
-        ]
-    }).then(function(users) { 
-        response.json(users);
-    }); 
+        "include": [{
+            "model": Role,
+            "attributes": ["name", "title"],
+            "through": {
+                "attributes": []
+            },  
+        }],
+        "where": {
+            "deleted": {
+                $ne: null
+            }
+        }
+    }).then(function(users) {
+        response.status(200).json(users).end();
+        return;
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
+});
+
+/**
+* Active le compte de l'utilisateur identifié par userId
+*/
+app.post("/users/:userId([0-9]*)/confirm/", [checkUserTokenIsValid, checkUserIsAdmin, checkUserExists], function(request, response) {
+    User.findById(request.params.userId).then(function(user) {
+        if (user.confirmed != null) {
+            response.status(404).json({
+                "code": 404,
+                "error": "Cet utilisateur est déjà confirmé."
+            }).end();
+            return;
+        }
+        let promises = [];
+        promises[0] = user.update({
+            "confirmed": sequelize.fn("now")
+        });
+        promises[1] = Role.findOne({
+            "where": {
+                "name": "contributor"
+            }
+        }).then(function(role) {
+            promises[2] = UserRole.create({
+                "usersId": user.id,
+                "rolesId": role.id
+            });
+        });
+        Promise.all(promises).then(function() {
+            response.status(200).json({
+                "code": 200,
+                "message": "L'utilisateur a été confirmé avec succès."
+            }).end();
+            return;
+        }).catch(function() {
+            response.status(500).json({
+                "code": 500,
+                "error": "Une erreur s'est produite."
+            }).end();
+            return;
+        });
+    }).catch(function() {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
+});
+
+/**
+* Efface un utilisateur de la base de données
+*/
+app.delete("/users/:userId([0-9]*)/delete/",[checkUserTokenIsValid, checkUserIsAdmin, checkUserExists, checkUserIsNotMe], function(request, response){
+    User.findById(request.params.userId).then(function(user) {
+        let promise = null;
+        if (user.confirmed != null) {
+            promise = user.destroy();
+        } else {
+            promise = user.destroy({"force": true});
+        }
+        promise.then(function() {
+            response.status(200).json({
+                "code": 200,
+                "message": "L'utilisateur a été effacé avec succès."
+            }).end();
+            return;
+        }).catch(function() {
+            response.status(500).json({
+                "code": 500,
+                "error": "Une erreur s'est produite."
+            }).end();
+            return;
+        });
+    }).catch(function(error) {
+        response.status(500).json({
+            "code": 500,
+            "error": "Une erreur s'est produite."
+        }).end();
+        return;
+    });
 });
 
 /**
@@ -1734,26 +1879,6 @@ app.get("/user/revive", checkUserTokenIsValid, function(request, response) {
         response.status(500).json({
             "code": 500,
             "error": "Une erreur inconnue s'est produite."
-        }).end();
-        return;
-    });
-});
-
-/**
-* Efface un utilisateur de la base de données
-*/
-app.delete("/users/:userId([0-9]*)/delete",[checkUserTokenIsValid, checkUserIsAdmin, checkUserExists, checkUserIsNotMe], function(request, response){
-        User.findById(request.params.userId).then(function(user) {
-        user.destroy();
-        response.status(200).json({
-            "code": 200,
-            "message": "L'utilisateur a été supprimée avec succès"
-        }).end();
-        return;
-    }).catch(function(error) {
-        response.status(500).json({
-            "code": 500,
-            "error": "Une erreur s'est produite."
         }).end();
         return;
     });

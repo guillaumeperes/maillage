@@ -458,12 +458,22 @@ En cas d'erreur, retourne :
 }
 ```
 
-**POST** https://api.maillage.guillaumeperes.fr/register/
+**POST** https://api.maillage.guillaumeperes.fr/register
 
-**POST** https://api.maillage.guillaumeperes.fr/login/
+Création d'un nouvel utilisateur lors de l'inscription
 
-**GET** https://api.maillage.guillaumeperes.fr/user/revive/
+**POST** https://api.maillage.guillaumeperes.fr/login
+
+Connexion d'un utilisateur 
+
+**GET** https://api.maillage.guillaumeperes.fr/user/revive
+
+Permet l'obtention d'un nouveau token de connexion avant que celui qui est envoyé n'expire
 
 **DELETE** https://api.maillage.guillaumeperes.fr/users/(user_id)/delete/
 
+Efface un utilisateur de la base de données (identifié par userId)
+
 **GET** https://api.maillage.guillaumeperes.fr/user/roles/
+
+ Liste les rôles de l'utilisateur identifié par le token de connexion

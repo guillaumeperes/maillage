@@ -429,7 +429,12 @@ Le champs categoriesId de la table tag est allimenté par la valeur (category_id
 
 **GET** https://api.maillage.guillaumeperes.fr/tags/(tag_id)/detail/
 
+Chercher les informations d'un tag données en fonction du champs tagId
+
 **POST** https://api.maillage.guillaumeperes.fr/tags/(tag_id)/edit/
+
+Modifier les valeures d'un tag (recherchée par le champs tagId).
+Les valeurs saisies sont soumis a des vérifications
 
 **DELETE** https://api.maillage.guillaumeperes.fr/tags/(tag_id)/delete/
 

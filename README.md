@@ -157,7 +157,18 @@ En cas d'erreur ou d'absence de résultats, retourne un tableau json vide.
 []
 ```
 
-**GET** https://api.maillage.guillaumeperes.fr/users/list/
+**GET** https://api.maillage.guillaumeperes.fr/users/list/confirmed/
+
+Liste des utilisateurs confirmés (utilisateur dont le champs confirmed n'est pas null) 
+
+**GET** https://api.maillage.guillaumeperes.fr/users/list/pending/
+
+Liste des utilisateurs en attente de confirmation par l'administrateur (utilisateur dont le champs confirmed est null)
+
+**GET** https://api.maillage.guillaumeperes.fr/users/list/deleted/
+
+Liste les utilisateurs effacés (utilisateur dont le champs deleted n'est pas null)
+
 
 **GET** https://api.maillage.guillaumeperes.fr/meshes/sorts/
 
@@ -212,7 +223,16 @@ Retourne un objet json sous la forme :
 
 **GET** https://api.maillage.guillaumeperes.fr/meshes/search/
 
+Recherche de fichiers de maillage en fonction de plusieurs paramêtres : 
+- en focntion des facettes (query.filters)
+- en fonction de la recherche full text (query.keyword)
+
+Le résultat de la requête est trié en fonction de l'ordre de tri selectionné (query.sort)
+
 **PUT** https://api.maillage.guillaumeperes.fr/mesh/new/
+
+Crée un nouveau fichier de maillage dans la base de données. 
+Les données saisies sont soumises à des vérifications de format.
 
 **GET** https://api.maillage.guillaumeperes.fr/mesh/(mesh_id)/view/
 
@@ -336,6 +356,10 @@ En cas d'erreur (si l'identifiant passé ne correspond à aucun contenu existant
 
 **POST** https://api.maillage.guillaumeperes.fr/mesh/(mesh_id)/edit/
 
+Met à jour les données d'un fichier de maillage.
+Les données saisies sont soumises à des vérifications de format.
+
+
 **DELETE** https://api.maillage.guillaumeperes.fr/mesh/(mesh_id)/delete/
 
 Supprime le fichier de maillage identifié par l'entier positif ```mesh_id``` ainsi que tous les fichiers qui lui sont associés (fichier physique et images).
@@ -360,11 +384,21 @@ En cas d'erreur, retourne :
 
 **GET** https://api.maillage.guillaumeperes.fr/mesh/(mesh_id)/download/
 
+Télécharge le fichier de maillage associé au fichier mesh en fonction du "mesh_id". 
+
 **PUT** https://api.maillage.guillaumeperes.fr/categories/new/
+
+Créer une nouvelle catégorie.
+Il faut renseigner un titree et une couleurs.
 
 **GET** https://api.maillage.guillaumeperes.fr/categories/(category_id)/detail/
 
+Chercher les informations d'une catégorie données en fonction du champs categoryId
+
 **POST** https://api.maillage.guillaumeperes.fr/categories/(category_id)/edit/
+
+Modifier les valeures d'une catégorie (recherchée par le champs categoryId).
+Les valeurs saisie sont soumis a des vérifications
 
 **DELETE** https://api.maillage.guillaumeperes.fr/categories/(category_id)/delete/
 
@@ -389,6 +423,9 @@ En cas d'erreur, retourne :
 ```
 
 **PUT** https://api.maillage.guillaumeperes.fr/categories/(category_id)/tags/new/
+
+Créer un tag sur une catégorie.
+Le champs categoriesId de la table tag est allimenté par la valeur (category_id) de l'URL.
 
 **GET** https://api.maillage.guillaumeperes.fr/tags/(tag_id)/detail/
 
